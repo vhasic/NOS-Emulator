@@ -1,0 +1,5871 @@
+
+NUFQD CON 0
+
+CHAR1 CON 1
+CELL1 CON 1
+NBITS CON 16
+NRP   CON 64
+NSP   CON 64
+NTIB  CON 80
+NPAD  CON 80
+ECOMP CON $40
+EIMED CON $80
+EIMCO CON $C0
+JPNX1 CON $4FF9
+NVOCS CON 8
+NDUMP CON 16
+ECR   CON 13
+ELF   CON 10
+EBS   CON 8
+EBL   CON 32
+MEMB  CON $0000
+MEME  CON $7F00
+ETIB  CON $7EB0        ;  MEME-NTIB
+ESPP  CON $7EB0        ; ETIB
+ERP   CON $7E70        ;  ESPP-NSP*CELL1
+EUP   CON $7E30        ; ERP-NRP*CELL1
+
+
+      ORG $0000  ; MEMB
+
+
+RESET:
+      LOD R5,R5,R15        ; JUMP TO COLD START
+      WRD VCOLD
+      ORA R15,R5,R5
+VERSI WRD 13
+      TXT "eForth SVEU16"
+COPYR WRD $34
+      TXT "Copyright 1989-1999 Bill Muench All rights reserved."
+DRAWCHAR:
+  SUB R3,R3,R1
+  STO R4,R4,R3
+  SUB R3,R3,R1
+  STO R2,R2,R3
+  SUB R3,R3,R1
+  STO R9,R9,R3
+  SUB R3,R3,R1
+  STO R11,R11,R3
+  SUB R3,R3,R1
+  STO R12,R12,R3
+  SUB R3,R3,R1
+  STO R13,R13,R3
+  SUB R0,R0,R0
+TESTCR:  
+  LOD R11,R11,R15
+  WRD TESTLF
+  LDC R4,13
+  EQU R7,R4,R5 
+  ADD R15,R15,R7  
+  ORA R15,R11,R11
+DOCR:
+  LOD R12,R12,R15
+  WRD XVAL
+  STO R0,R0,R12
+  LOD R11,R11,R15
+  WRD EXITCHAR
+  ORA R15,R11,R11    
+  
+TESTLF:  
+  LOD R11,R11,R15
+  WRD TESTBS
+  LDC R4,10
+  EQU R7,R4,R5 
+  ADD R15,R15,R7  
+  ORA R15,R11,R11
+DOLF:
+  LOD R11,R11,R15
+  WRD LINEFEED
+  ORA R15,R11,R11    
+
+TESTBS:  
+  LOD R11,R11,R15
+  WRD PRINTABLECH
+  LDC R4,8
+  EQU R7,R4,R5 
+  ADD R15,R15,R7  
+  ORA R15,R11,R11
+DOBS:
+  LOD R12,R12,R15
+  WRD XVAL
+  LOD R8,R8,R15
+  WRD YVAL
+  LOD R6,R6,R12
+  LOD R9,R9,R8
+  GTU R7,R6,R0
+  ADD R7,R7,R7    ; x2
+  ADD R15,R15,R7
+  LDC R6,80
+  SUB R9,R9,R1
+  SUB R6,R6,R1
+  STO R9,R9,R8
+  STO R6,R6,R12
+  LOD R11,R11,R15
+  WRD EXITCHAR
+  ORA R15,R11,R11    
+
+
+
+
+
+PRINTABLECH:
+  LOD R8,R8,R15
+  WRD XVAL
+  LOD R7,R7,R8         ; col
+  LOD R8,R8,R15
+  WRD YVAL
+  LOD R8,R8,R8         ; ROW
+               
+
+  LOD R2,R2,R15
+  WRD 320
+  MUL R8,R8,R2     ; X320
+  AND R11,R7,R1       
+  LDC R0,$38
+  ADD R15,R15,R11
+  LDC R0,0      ; HALF
+  SHR R7,R7,R1
+  ADD R8,R8,R7
+
+  LOD R13,R13,R15
+  WRD $00FF
+  SHR R13,R13,R0
+
+  ADD R5,R5,R5   ; x2
+  ADD R5,R5,R5   ; x4
+  LOD R6,R6,R15  ; FONT START
+  WRD FONT
+  ADD R5,R5,R6 
+  LOD R6,R6,R15  ; VIDEO ADDRESS
+  WRD $B000
+  ADD R6,R6,R8
+  LDC R8,$38  ; rotate 8 times const
+  LOD R12,R12,R15  ; Font mask
+  WRD $FF00 ;    WRD FF00  OR 00FF
+  LOD R9,R15,R15 ; REM POS
+  WRD LOOP
+  LDC R2,0
+  LDC R4,9
+LOOP:
+  LOD R11,R11,R5   ; FONT LINE 
+  AND R11,R11,R12  ; AND MASK
+  SHR R11,R11,R0   ; FLIP FONTLINE
+  LOD R10,R10,R6   ; VIDEO WORD
+  AND R10,R10,R13  ; CLEAR HALF
+  ORA R10,R10,R11  ; MIX
+  STO R10,R10,R6   ; STORE
+  SHR R12,R12,R8   ; FLIP FONT MASK
+  XOR R0,R0,R8     ; SWAP FLIPPER
+  LDC R7,$28       ; NEWLINE
+  ADD R6,R6,R7     ; NEXT LINE IN VIDEO
+  ADD R5,R5,R2    ; NEXT FONT WORD
+  SUB R2,R1,R2   ; FLIP FONT SKIP
+  SUB R4,R4,R1   ; DEC FONT COUNTER
+  EQU R7,R4,R1    ; IF 1 SKIP LOOP
+  ADD R15,R15,R7
+  ORA R15,R9,R9
+                   ; END OF CHARACTER LOOP
+
+NEXTCOL
+  LOD R12,R12,R15
+  WRD XVAL
+  LOD R11,R11,R15
+  WRD NEXTROW
+
+  LOD R5,R5,R12
+  ADD R5,R5,R1
+  LDC R4,80
+  LTU R6,R5,R4
+  ADD R15,R15,R6
+  ORA R15,R11,R11
+  STO R5,R5,R12
+EXITCHAR:
+  SUB R0,R0,R0
+  LOD R13,R13,R3
+  ADD R3,R3,R1
+  LOD R12,R12,R3
+  ADD R3,R3,R1
+  LOD R11,R11,R3
+  ADD R3,R3,R1
+  LOD R9,R9,R3
+  ADD R3,R3,R1
+  LOD R2,R2,R3
+  ADD R3,R3,R1
+  LOD R4,R4,R3
+  ADD R3,R3,R1
+  ORA R15,R11,R11
+  
+
+NEXTROW
+  SUB R5,R5,R5
+  STO R5,R5,R12
+LINEFEED:
+  LOD R12,R12,R15
+  WRD YVAL
+  LOD R11,R11,R15
+  WRD EXITCHAR
+
+  LOD R5,R5,R12
+  ADD R5,R5,R1
+  STO R5,R5,R12  
+  LDC R4,59
+  GTU R7,R5,R4
+  ADD R15,R15,R7
+  ORA R15,R11,R11
+  STO R4,R4,R12  ; PUT TO LAST ROW CURSOR
+SCROLL:
+  LOD R4,R4,R15
+  WRD $B000
+  LOD R6,R6,R15
+  WRD $B140
+  LOD R8,R8,R15
+  WRD 18880
+  MAJ R11,R15,R15  ; MARK POINT
+  LOD R5,R5,R6
+  STO R5,R5,R4
+  ADD R4,R4,R1
+  ADD R6,R6,R1
+  SUB R8,R8,R1
+  LTU R7,R8,R1
+  ADD R15,R15,R7
+  ORA R15,R11,R11
+EMPTYLAST:
+  LOD R8,R8,R15
+  WRD 320
+  SUB R0,R0,R0
+  MAJ R11,R15,R15  ; MARK POINT
+  STO R0,R0,R4
+  ADD R4,R4,R1
+  SUB R8,R8,R1
+  LTU R7,R8,R1
+  ADD R15,R15,R7
+  ORA R15,R11,R11
+
+
+  LOD R11,R11,R15
+  WRD EXITCHAR
+  ORA R15,R11,R11
+XVAL WRD 12
+YVAL WRD 8
+
+
+;-------------------------------------
+FONT
+ ; ASCII 0 
+  WRD $0000
+  WRD $0000
+  WRD $0000
+  WRD $0000
+ ; ASCII 1 
+  WRD $7E81
+  WRD $A581
+  WRD $9DB9
+  WRD $817E
+ ; ASCII 2 
+  WRD $7EFF
+  WRD $DBFF
+  WRD $E3C7
+  WRD $FF7E
+ ; ASCII 3 
+  WRD $6CFE
+  WRD $FEFE
+  WRD $7C38
+  WRD $1000
+ ; ASCII 4 
+  WRD $1038
+  WRD $7CFE
+  WRD $7C38
+  WRD $1000
+ ; ASCII 5 
+  WRD $387C
+  WRD $38FE
+  WRD $FE10
+  WRD $107C
+ ; ASCII 6 
+  WRD $0018
+  WRD $3C7E
+  WRD $FF7E
+  WRD $187E
+ ; ASCII 7 
+  WRD $0000
+  WRD $183C
+  WRD $3C18
+  WRD $0000
+ ; ASCII 8 
+  WRD $FFFF
+  WRD $E7C3
+  WRD $C3E7
+  WRD $FFFF
+ ; ASCII 9 
+  WRD $003C
+  WRD $6642
+  WRD $4266
+  WRD $3C00
+ ; ASCII 10 
+  WRD $FFC3
+  WRD $99BD
+  WRD $BD99
+  WRD $C3FF
+ ; ASCII 11 
+  WRD $0F07
+  WRD $0F7D
+  WRD $CCCC
+  WRD $CC78
+ ; ASCII 12 
+  WRD $3C66
+  WRD $6666
+  WRD $3C18
+  WRD $7E18
+ ; ASCII 13 
+  WRD $3F33
+  WRD $3F30
+  WRD $3070
+  WRD $F0E0
+ ; ASCII 14 
+  WRD $7F63
+  WRD $7F63
+  WRD $6367
+  WRD $E6C0
+ ; ASCII 15 
+  WRD $995A
+  WRD $3CE7
+  WRD $E73C
+  WRD $5A99
+ ; ASCII 16 
+  WRD $80E0
+  WRD $F8FE
+  WRD $F8E0
+  WRD $8000
+ ; ASCII 17 
+  WRD $020E
+  WRD $3EFE
+  WRD $3E0E
+  WRD $0200
+ ; ASCII 18 
+  WRD $183C
+  WRD $7E18
+  WRD $187E
+  WRD $3C18
+ ; ASCII 19 
+  WRD $6666
+  WRD $6666
+  WRD $6600
+  WRD $6600
+ ; ASCII 20 
+  WRD $7FDB
+  WRD $DB7B
+  WRD $1B1B
+  WRD $1B00
+ ; ASCII 21 
+  WRD $3F60
+  WRD $7C66
+  WRD $663E
+  WRD $06FC
+ ; ASCII 22 
+  WRD $0000
+  WRD $0000
+  WRD $7E7E
+  WRD $7E00
+ ; ASCII 23 
+  WRD $183C
+  WRD $7E18
+  WRD $7E3C
+  WRD $18FF
+ ; ASCII 24 
+  WRD $183C
+  WRD $7E18
+  WRD $1818
+  WRD $1800
+ ; ASCII 25 
+  WRD $1818
+  WRD $1818
+  WRD $7E3C
+  WRD $1800
+ ; ASCII 26 
+  WRD $0018
+  WRD $0CFE
+  WRD $0C18
+  WRD $0000
+ ; ASCII 27 
+  WRD $0030
+  WRD $60FE
+  WRD $6030
+  WRD $0000
+ ; ASCII 28 
+  WRD $0000
+  WRD $C0C0
+  WRD $C0FE
+  WRD $0000
+ ; ASCII 29 
+  WRD $0024
+  WRD $66FF
+  WRD $6624
+  WRD $0000
+ ; ASCII 30 
+  WRD $0018
+  WRD $3C7E
+  WRD $FFFF
+  WRD $0000
+ ; ASCII 31 
+  WRD $00FF
+  WRD $FF7E
+  WRD $3C18
+  WRD $0000
+ ; ASCII 32 
+  WRD $0000
+  WRD $0000
+  WRD $0000
+  WRD $0000
+ ; ASCII 33 
+  WRD $1818
+  WRD $1818
+  WRD $1800
+  WRD $1800
+ ; ASCII 34 
+  WRD $6C6C
+  WRD $6C00
+  WRD $0000
+  WRD $0000
+ ; ASCII 35 
+  WRD $6C6C
+  WRD $FE6C
+  WRD $FE6C
+  WRD $6C00
+ ; ASCII 36 
+  WRD $187E
+  WRD $C07C
+  WRD $06FC
+  WRD $1800
+ ; ASCII 37 
+  WRD $00C6
+  WRD $CC18
+  WRD $3066
+  WRD $C600
+ ; ASCII 38 
+  WRD $386C
+  WRD $3876
+  WRD $DCCC
+  WRD $7600
+ ; ASCII 39 
+  WRD $3030
+  WRD $6000
+  WRD $0000
+  WRD $0000
+ ; ASCII 40 
+  WRD $0C18
+  WRD $3030
+  WRD $3018
+  WRD $0C00
+ ; ASCII 41 
+  WRD $3018
+  WRD $0C0C
+  WRD $0C18
+  WRD $3000
+ ; ASCII 42 
+  WRD $0066
+  WRD $3CFF
+  WRD $3C66
+  WRD $0000
+ ; ASCII 43 
+  WRD $0018
+  WRD $187E
+  WRD $1818
+  WRD $0000
+ ; ASCII 44 
+  WRD $0000
+  WRD $0000
+  WRD $0018
+  WRD $1830
+ ; ASCII 45 
+  WRD $0000
+  WRD $007E
+  WRD $0000
+  WRD $0000
+ ; ASCII 46 
+  WRD $0000
+  WRD $0000
+  WRD $0018
+  WRD $1800
+ ; ASCII 47 
+  WRD $060C
+  WRD $1830
+  WRD $60C0
+  WRD $8000
+ ; ASCII 48 
+  WRD $7CCE
+  WRD $DEF6
+  WRD $E6C6
+  WRD $7C00
+ ; ASCII 49 
+  WRD $1838
+  WRD $1818
+  WRD $1818
+  WRD $7E00
+ ; ASCII 50 
+  WRD $7CC6
+  WRD $067C
+  WRD $C0C0
+  WRD $FE00
+ ; ASCII 51 
+  WRD $FC06
+  WRD $063C
+  WRD $0606
+  WRD $FC00
+ ; ASCII 52 
+  WRD $0CCC
+  WRD $CCCC
+  WRD $FE0C
+  WRD $0C00
+ ; ASCII 53 
+  WRD $FEC0
+  WRD $FC06
+  WRD $06C6
+  WRD $7C00
+ ; ASCII 54 
+  WRD $7CC0
+  WRD $C0FC
+  WRD $C6C6
+  WRD $7C00
+ ; ASCII 55 
+  WRD $FE06
+  WRD $060C
+  WRD $1830
+  WRD $3000
+ ; ASCII 56 
+  WRD $7CC6
+  WRD $C67C
+  WRD $C6C6
+  WRD $7C00
+ ; ASCII 57 
+  WRD $7CC6
+  WRD $C67E
+  WRD $0606
+  WRD $7C00
+ ; ASCII 58 
+  WRD $0018
+  WRD $1800
+  WRD $0018
+  WRD $1800
+ ; ASCII 59 
+  WRD $0018
+  WRD $1800
+  WRD $0018
+  WRD $1830
+ ; ASCII 60 
+  WRD $0C18
+  WRD $3060
+  WRD $3018
+  WRD $0C00
+ ; ASCII 61 
+  WRD $0000
+  WRD $7E00
+  WRD $7E00
+  WRD $0000
+ ; ASCII 62 
+  WRD $3018
+  WRD $0C06
+  WRD $0C18
+  WRD $3000
+ ; ASCII 63 
+  WRD $3C66
+  WRD $0C18
+  WRD $1800
+  WRD $1800
+ ; ASCII 64 
+  WRD $7CC6
+  WRD $DEDE
+  WRD $DEC0
+  WRD $7E00
+ ; ASCII 65 
+  WRD $386C
+  WRD $C6C6
+  WRD $FEC6
+  WRD $C600
+ ; ASCII 66 
+  WRD $FCC6
+  WRD $C6FC
+  WRD $C6C6
+  WRD $FC00
+ ; ASCII 67 
+  WRD $7CC6
+  WRD $C0C0
+  WRD $C0C6
+  WRD $7C00
+ ; ASCII 68 
+  WRD $F8CC
+  WRD $C6C6
+  WRD $C6CC
+  WRD $F800
+ ; ASCII 69 
+  WRD $FEC0
+  WRD $C0F8
+  WRD $C0C0
+  WRD $FE00
+ ; ASCII 70 
+  WRD $FEC0
+  WRD $C0F8
+  WRD $C0C0
+  WRD $C000
+ ; ASCII 71 
+  WRD $7CC6
+  WRD $C0C0
+  WRD $CEC6
+  WRD $7C00
+ ; ASCII 72 
+  WRD $C6C6
+  WRD $C6FE
+  WRD $C6C6
+  WRD $C600
+ ; ASCII 73 
+  WRD $7E18
+  WRD $1818
+  WRD $1818
+  WRD $7E00
+ ; ASCII 74 
+  WRD $0606
+  WRD $0606
+  WRD $06C6
+  WRD $7C00
+ ; ASCII 75 
+  WRD $C6CC
+  WRD $D8F0
+  WRD $D8CC
+  WRD $C600
+ ; ASCII 76 
+  WRD $C0C0
+  WRD $C0C0
+  WRD $C0C0
+  WRD $FE00
+ ; ASCII 77 
+  WRD $C6EE
+  WRD $FEFE
+  WRD $D6C6
+  WRD $C600
+ ; ASCII 78 
+  WRD $C6E6
+  WRD $F6DE
+  WRD $CEC6
+  WRD $C600
+ ; ASCII 79 
+  WRD $7CC6
+  WRD $C6C6
+  WRD $C6C6
+  WRD $7C00
+ ; ASCII 80 
+  WRD $FCC6
+  WRD $C6FC
+  WRD $C0C0
+  WRD $C000
+ ; ASCII 81 
+  WRD $7CC6
+  WRD $C6C6
+  WRD $D6DE
+  WRD $7C06
+ ; ASCII 82 
+  WRD $FCC6
+  WRD $C6FC
+  WRD $D8CC
+  WRD $C600
+ ; ASCII 83 
+  WRD $7CC6
+  WRD $C07C
+  WRD $06C6
+  WRD $7C00
+ ; ASCII 84 
+  WRD $FF18
+  WRD $1818
+  WRD $1818
+  WRD $1800
+ ; ASCII 85 
+  WRD $C6C6
+  WRD $C6C6
+  WRD $C6C6
+  WRD $FE00
+ ; ASCII 86 
+  WRD $C6C6
+  WRD $C6C6
+  WRD $C67C
+  WRD $3800
+ ; ASCII 87 
+  WRD $C6C6
+  WRD $C6C6
+  WRD $D6FE
+  WRD $6C00
+ ; ASCII 88 
+  WRD $C6C6
+  WRD $6C38
+  WRD $6CC6
+  WRD $C600
+ ; ASCII 89 
+  WRD $C6C6
+  WRD $C67C
+  WRD $1830
+  WRD $E000
+ ; ASCII 90 
+  WRD $FE06
+  WRD $0C18
+  WRD $3060
+  WRD $FE00
+ ; ASCII 91 
+  WRD $3C30
+  WRD $3030
+  WRD $3030
+  WRD $3C00
+ ; ASCII 92 
+  WRD $C060
+  WRD $3018
+  WRD $0C06
+  WRD $0200
+ ; ASCII 93 
+  WRD $3C0C
+  WRD $0C0C
+  WRD $0C0C
+  WRD $3C00
+ ; ASCII 94 
+  WRD $1038
+  WRD $6CC6
+  WRD $0000
+  WRD $0000
+ ; ASCII 95 
+  WRD $0000
+  WRD $0000
+  WRD $0000
+  WRD $00FF
+ ; ASCII 96 
+  WRD $1818
+  WRD $0C00
+  WRD $0000
+  WRD $0000
+ ; ASCII 97 
+  WRD $0000
+  WRD $7C06
+  WRD $7EC6
+  WRD $7E00
+ ; ASCII 98 
+  WRD $C0C0
+  WRD $C0FC
+  WRD $C6C6
+  WRD $FC00
+ ; ASCII 99 
+  WRD $0000
+  WRD $7CC6
+  WRD $C0C6
+  WRD $7C00
+ ; ASCII 100 
+  WRD $0606
+  WRD $067E
+  WRD $C6C6
+  WRD $7E00
+ ; ASCII 101 
+  WRD $0000
+  WRD $7CC6
+  WRD $FEC0
+  WRD $7C00
+ ; ASCII 102 
+  WRD $1C36
+  WRD $3078
+  WRD $3030
+  WRD $7800
+ ; ASCII 103 
+  WRD $0000
+  WRD $7EC6
+  WRD $C67E
+  WRD $06FC
+ ; ASCII 104 
+  WRD $C0C0
+  WRD $FCC6
+  WRD $C6C6
+  WRD $C600
+ ; ASCII 105 
+  WRD $1800
+  WRD $3818
+  WRD $1818
+  WRD $3C00
+ ; ASCII 106 
+  WRD $0600
+  WRD $0606
+  WRD $0606
+  WRD $C67C
+ ; ASCII 107 
+  WRD $C0C0
+  WRD $CCD8
+  WRD $F8CC
+  WRD $C600
+ ; ASCII 108 
+  WRD $3818
+  WRD $1818
+  WRD $1818
+  WRD $3C00
+ ; ASCII 109 
+  WRD $0000
+  WRD $CCFE
+  WRD $FED6
+  WRD $D600
+ ; ASCII 110 
+  WRD $0000
+  WRD $FCC6
+  WRD $C6C6
+  WRD $C600
+ ; ASCII 111 
+  WRD $0000
+  WRD $7CC6
+  WRD $C6C6
+  WRD $7C00
+ ; ASCII 112 
+  WRD $0000
+  WRD $FCC6
+  WRD $C6FC
+  WRD $C0C0
+ ; ASCII 113 
+  WRD $0000
+  WRD $7EC6
+  WRD $C67E
+  WRD $0606
+ ; ASCII 114 
+  WRD $0000
+  WRD $FCC6
+  WRD $C0C0
+  WRD $C000
+ ; ASCII 115 
+  WRD $0000
+  WRD $7EC0
+  WRD $7C06
+  WRD $FC00
+ ; ASCII 116 
+  WRD $1818
+  WRD $7E18
+  WRD $1818
+  WRD $0E00
+ ; ASCII 117 
+  WRD $0000
+  WRD $C6C6
+  WRD $C6C6
+  WRD $7E00
+ ; ASCII 118 
+  WRD $0000
+  WRD $C6C6
+  WRD $C67C
+  WRD $3800
+ ; ASCII 119 
+  WRD $0000
+  WRD $C6C6
+  WRD $D6FE
+  WRD $6C00
+ ; ASCII 120 
+  WRD $0000
+  WRD $C66C
+  WRD $386C
+  WRD $C600
+ ; ASCII 121 
+  WRD $0000
+  WRD $C6C6
+  WRD $C67E
+  WRD $06FC
+ ; ASCII 122 
+  WRD $0000
+  WRD $FE0C
+  WRD $3860
+  WRD $FE00
+ ; ASCII 123 
+  WRD $0E18
+  WRD $1870
+  WRD $1818
+  WRD $0E00
+ ; ASCII 124 
+  WRD $1818
+  WRD $1800
+  WRD $1818
+  WRD $1800
+ ; ASCII 125 
+  WRD $7018
+  WRD $180E
+  WRD $1818
+  WRD $7000
+ ; ASCII 126 
+  WRD $76DC
+  WRD $0000
+  WRD $0000
+  WRD $0000
+ ; ASCII 127 
+  WRD $0010
+  WRD $386C
+  WRD $C6C6
+  WRD $FE00
+ ; ASCII 128 
+  WRD $7CC6
+  WRD $C0C0
+  WRD $C0D6
+  WRD $7C30
+ ; ASCII 129 
+  WRD $C600
+  WRD $C6C6
+  WRD $C6C6
+  WRD $7E00
+ ; ASCII 130 
+  WRD $0E00
+  WRD $7CC6
+  WRD $FEC0
+  WRD $7C00
+ ; ASCII 131 
+  WRD $7E81
+  WRD $3C06
+  WRD $7EC6
+  WRD $7E00
+ ; ASCII 132 
+  WRD $6600
+  WRD $7C06
+  WRD $7EC6
+  WRD $7E00
+ ; ASCII 133 
+  WRD $E000
+  WRD $7C06
+  WRD $7EC6
+  WRD $7E00
+ ; ASCII 134 
+  WRD $1818
+  WRD $7C06
+  WRD $7EC6
+  WRD $7E00
+ ; ASCII 135 
+  WRD $0000
+  WRD $7CC6
+  WRD $C0D6
+  WRD $7C30
+ ; ASCII 136 
+  WRD $7E81
+  WRD $7CC6
+  WRD $FEC0
+  WRD $7C00
+ ; ASCII 137 
+  WRD $6600
+  WRD $7CC6
+  WRD $FEC0
+  WRD $7C00
+ ; ASCII 138 
+  WRD $E000
+  WRD $7CC6
+  WRD $FEC0
+  WRD $7C00
+ ; ASCII 139 
+  WRD $6600
+  WRD $3818
+  WRD $1818
+  WRD $3C00
+ ; ASCII 140 
+  WRD $7C82
+  WRD $3818
+  WRD $1818
+  WRD $3C00
+ ; ASCII 141 
+  WRD $7000
+  WRD $3818
+  WRD $1818
+  WRD $3C00
+ ; ASCII 142 
+  WRD $C610
+  WRD $7CC6
+  WRD $FEC6
+  WRD $C600
+ ; ASCII 143 
+  WRD $3838
+  WRD $007C
+  WRD $C6FE
+  WRD $C600
+ ; ASCII 144 
+  WRD $0E00
+  WRD $FEC0
+  WRD $F8C0
+  WRD $FE00
+ ; ASCII 145 
+  WRD $0000
+  WRD $7F0C
+  WRD $7FCC
+  WRD $7F00
+ ; ASCII 146 
+  WRD $3F6C
+  WRD $CCFF
+  WRD $CCCC
+  WRD $CF00
+ ; ASCII 147 
+  WRD $7C82
+  WRD $7CC6
+  WRD $C6C6
+  WRD $7C00
+ ; ASCII 148 
+  WRD $6600
+  WRD $7CC6
+  WRD $C6C6
+  WRD $7C00
+ ; ASCII 149 
+  WRD $E000
+  WRD $7CC6
+  WRD $C6C6
+  WRD $7C00
+ ; ASCII 150 
+  WRD $7C82
+  WRD $00C6
+  WRD $C6C6
+  WRD $7E00
+ ; ASCII 151 
+  WRD $E000
+  WRD $C6C6
+  WRD $C6C6
+  WRD $7E00
+ ; ASCII 152 
+  WRD $6600
+  WRD $6666
+  WRD $663E
+  WRD $067C
+ ; ASCII 153 
+  WRD $C67C
+  WRD $C6C6
+  WRD $C6C6
+  WRD $7C00
+ ; ASCII 154 
+  WRD $C600
+  WRD $C6C6
+  WRD $C6C6
+  WRD $FE00
+ ; ASCII 155 
+  WRD $1818
+  WRD $7ED8
+  WRD $D8D8
+  WRD $7E18
+ ; ASCII 156 
+  WRD $386C
+  WRD $60F0
+  WRD $6066
+  WRD $FC00
+ ; ASCII 157 
+  WRD $6666
+  WRD $3C18
+  WRD $7E18
+  WRD $7E18
+ ; ASCII 158 
+  WRD $F8CC
+  WRD $CCFA
+  WRD $C6CF
+  WRD $C6C3
+ ; ASCII 159 
+  WRD $0E1B
+  WRD $183C
+  WRD $1818
+  WRD $D870
+ ; ASCII 160 
+  WRD $0E00
+  WRD $7C06
+  WRD $7EC6
+  WRD $7E00
+ ; ASCII 161 
+  WRD $1C00
+  WRD $3818
+  WRD $1818
+  WRD $3C00
+ ; ASCII 162 
+  WRD $0E00
+  WRD $7CC6
+  WRD $C6C6
+  WRD $7C00
+ ; ASCII 163 
+  WRD $0E00
+  WRD $C6C6
+  WRD $C6C6
+  WRD $7E00
+ ; ASCII 164 
+  WRD $00FE
+  WRD $00FC
+  WRD $C6C6
+  WRD $C600
+ ; ASCII 165 
+  WRD $FE00
+  WRD $C6E6
+  WRD $F6DE
+  WRD $CE00
+ ; ASCII 166 
+  WRD $3C6C
+  WRD $6C3E
+  WRD $007E
+  WRD $0000
+ ; ASCII 167 
+  WRD $3C66
+  WRD $663C
+  WRD $007E
+  WRD $0000
+ ; ASCII 168 
+  WRD $1800
+  WRD $1818
+  WRD $3066
+  WRD $3C00
+ ; ASCII 169 
+  WRD $0000
+  WRD $00FC
+  WRD $C0C0
+  WRD $0000
+ ; ASCII 170 
+  WRD $0000
+  WRD $00FC
+  WRD $0C0C
+  WRD $0000
+ ; ASCII 171 
+  WRD $C6CC
+  WRD $D83F
+  WRD $63CF
+  WRD $8C0F
+ ; ASCII 172 
+  WRD $C3C6
+  WRD $CCDB
+  WRD $376D
+  WRD $CF03
+ ; ASCII 173 
+  WRD $1800
+  WRD $1818
+  WRD $1818
+  WRD $1800
+ ; ASCII 174 
+  WRD $0033
+  WRD $66CC
+  WRD $6633
+  WRD $0000
+ ; ASCII 175 
+  WRD $00CC
+  WRD $6633
+  WRD $66CC
+  WRD $0000
+ ; ASCII 176 
+  WRD $2288
+  WRD $2288
+  WRD $2288
+  WRD $2288
+ ; ASCII 177 
+  WRD $55AA
+  WRD $55AA
+  WRD $55AA
+  WRD $55AA
+ ; ASCII 178 
+  WRD $DD77
+  WRD $DD77
+  WRD $DD77
+  WRD $DD77
+ ; ASCII 179 
+  WRD $1818
+  WRD $1818
+  WRD $1818
+  WRD $1818
+ ; ASCII 180 
+  WRD $1818
+  WRD $1818
+  WRD $F818
+  WRD $1818
+ ; ASCII 181 
+  WRD $1818
+  WRD $F818
+  WRD $F818
+  WRD $1818
+ ; ASCII 182 
+  WRD $3636
+  WRD $3636
+  WRD $F636
+  WRD $3636
+ ; ASCII 183 
+  WRD $0000
+  WRD $0000
+  WRD $FE36
+  WRD $3636
+ ; ASCII 184 
+  WRD $0000
+  WRD $F818
+  WRD $F818
+  WRD $1818
+ ; ASCII 185 
+  WRD $3636
+  WRD $F606
+  WRD $F636
+  WRD $3636
+ ; ASCII 186 
+  WRD $3636
+  WRD $3636
+  WRD $3636
+  WRD $3636
+ ; ASCII 187 
+  WRD $0000
+  WRD $FE06
+  WRD $F636
+  WRD $3636
+ ; ASCII 188 
+  WRD $3636
+  WRD $F606
+  WRD $FE00
+  WRD $0000
+ ; ASCII 189 
+  WRD $3636
+  WRD $3636
+  WRD $FE00
+  WRD $0000
+ ; ASCII 190 
+  WRD $1818
+  WRD $F818
+  WRD $F800
+  WRD $0000
+ ; ASCII 191 
+  WRD $0000
+  WRD $0000
+  WRD $F818
+  WRD $1818
+ ; ASCII 192 
+  WRD $1818
+  WRD $1818
+  WRD $1F00
+  WRD $0000
+ ; ASCII 193 
+  WRD $1818
+  WRD $1818
+  WRD $FF00
+  WRD $0000
+ ; ASCII 194 
+  WRD $0000
+  WRD $0000
+  WRD $FF18
+  WRD $1818
+ ; ASCII 195 
+  WRD $1818
+  WRD $1818
+  WRD $1F18
+  WRD $1818
+ ; ASCII 196 
+  WRD $0000
+  WRD $0000
+  WRD $FF00
+  WRD $0000
+ ; ASCII 197 
+  WRD $1818
+  WRD $1818
+  WRD $FF18
+  WRD $1818
+ ; ASCII 198 
+  WRD $1818
+  WRD $1F18
+  WRD $1F18
+  WRD $1818
+ ; ASCII 199 
+  WRD $3636
+  WRD $3636
+  WRD $3736
+  WRD $3636
+ ; ASCII 200 
+  WRD $3636
+  WRD $3730
+  WRD $3F00
+  WRD $0000
+ ; ASCII 201 
+  WRD $0000
+  WRD $3F30
+  WRD $3736
+  WRD $3636
+ ; ASCII 202 
+  WRD $3636
+  WRD $F700
+  WRD $FF00
+  WRD $0000
+ ; ASCII 203 
+  WRD $0000
+  WRD $FF00
+  WRD $F736
+  WRD $3636
+ ; ASCII 204 
+  WRD $3636
+  WRD $3730
+  WRD $3736
+  WRD $3636
+ ; ASCII 205 
+  WRD $0000
+  WRD $FF00
+  WRD $FF00
+  WRD $0000
+ ; ASCII 206 
+  WRD $3636
+  WRD $F700
+  WRD $F736
+  WRD $3636
+ ; ASCII 207 
+  WRD $1818
+  WRD $FF00
+  WRD $FF00
+  WRD $0000
+ ; ASCII 208 
+  WRD $3636
+  WRD $3636
+  WRD $FF00
+  WRD $0000
+ ; ASCII 209 
+  WRD $0000
+  WRD $FF00
+  WRD $FF18
+  WRD $1818
+ ; ASCII 210 
+  WRD $0000
+  WRD $0000
+  WRD $FF36
+  WRD $3636
+ ; ASCII 211 
+  WRD $3636
+  WRD $3636
+  WRD $3F00
+  WRD $0000
+ ; ASCII 212 
+  WRD $1818
+  WRD $1F18
+  WRD $1F00
+  WRD $0000
+ ; ASCII 213 
+  WRD $0000
+  WRD $1F18
+  WRD $1F18
+  WRD $1818
+ ; ASCII 214 
+  WRD $0000
+  WRD $0000
+  WRD $3F36
+  WRD $3636
+ ; ASCII 215 
+  WRD $3636
+  WRD $3636
+  WRD $FF36
+  WRD $3636
+ ; ASCII 216 
+  WRD $1818
+  WRD $FF18
+  WRD $FF18
+  WRD $1818
+ ; ASCII 217 
+  WRD $1818
+  WRD $1818
+  WRD $F800
+  WRD $0000
+ ; ASCII 218 
+  WRD $0000
+  WRD $0000
+  WRD $1F18
+  WRD $1818
+ ; ASCII 219 
+  WRD $FFFF
+  WRD $FFFF
+  WRD $FFFF
+  WRD $FFFF
+ ; ASCII 220 
+  WRD $0000
+  WRD $0000
+  WRD $FFFF
+  WRD $FFFF
+ ; ASCII 221 
+  WRD $F0F0
+  WRD $F0F0
+  WRD $F0F0
+  WRD $F0F0
+ ; ASCII 222 
+  WRD $0F0F
+  WRD $0F0F
+  WRD $0F0F
+  WRD $0F0F
+ ; ASCII 223 
+  WRD $FFFF
+  WRD $FFFF
+  WRD $0000
+  WRD $0000
+ ; ASCII 224 
+  WRD $0000
+  WRD $76DC
+  WRD $C8DC
+  WRD $7600
+ ; ASCII 225 
+  WRD $386C
+  WRD $6C78
+  WRD $6C66
+  WRD $6C60
+ ; ASCII 226 
+  WRD $00FE
+  WRD $C6C0
+  WRD $C0C0
+  WRD $C000
+ ; ASCII 227 
+  WRD $0000
+  WRD $FE6C
+  WRD $6C6C
+  WRD $6C00
+ ; ASCII 228 
+  WRD $FE60
+  WRD $3018
+  WRD $3060
+  WRD $FE00
+ ; ASCII 229 
+  WRD $0000
+  WRD $7ED8
+  WRD $D8D8
+  WRD $7000
+ ; ASCII 230 
+  WRD $0066
+  WRD $6666
+  WRD $667C
+  WRD $60C0
+ ; ASCII 231 
+  WRD $0076
+  WRD $DC18
+  WRD $1818
+  WRD $1800
+ ; ASCII 232 
+  WRD $7E18
+  WRD $3C66
+  WRD $663C
+  WRD $187E
+ ; ASCII 233 
+  WRD $3C66
+  WRD $C3FF
+  WRD $C366
+  WRD $3C00
+ ; ASCII 234 
+  WRD $3C66
+  WRD $C3C3
+  WRD $6666
+  WRD $E700
+ ; ASCII 235 
+  WRD $0E18
+  WRD $0C7E
+  WRD $C6C6
+  WRD $7C00
+ ; ASCII 236 
+  WRD $0000
+  WRD $7EDB
+  WRD $DB7E
+  WRD $0000
+ ; ASCII 237 
+  WRD $060C
+  WRD $7EDB
+  WRD $DB7E
+  WRD $60C0
+ ; ASCII 238 
+  WRD $3860
+  WRD $C0F8
+  WRD $C060
+  WRD $3800
+ ; ASCII 239 
+  WRD $78CC
+  WRD $CCCC
+  WRD $CCCC
+  WRD $CC00
+ ; ASCII 240 
+  WRD $007E
+  WRD $007E
+  WRD $007E
+  WRD $0000
+ ; ASCII 241 
+  WRD $1818
+  WRD $7E18
+  WRD $1800
+  WRD $7E00
+ ; ASCII 242 
+  WRD $6030
+  WRD $1830
+  WRD $6000
+  WRD $FC00
+ ; ASCII 243 
+  WRD $1830
+  WRD $6030
+  WRD $1800
+  WRD $FC00
+ ; ASCII 244 
+  WRD $0E1B
+  WRD $1B18
+  WRD $1818
+  WRD $1818
+ ; ASCII 245 
+  WRD $1818
+  WRD $1818
+  WRD $18D8
+  WRD $D870
+ ; ASCII 246 
+  WRD $1818
+  WRD $007E
+  WRD $0018
+  WRD $1800
+ ; ASCII 247 
+  WRD $0076
+  WRD $DC00
+  WRD $76DC
+  WRD $0000
+ ; ASCII 248 
+  WRD $386C
+  WRD $6C38
+  WRD $0000
+  WRD $0000
+ ; ASCII 249 
+  WRD $0000
+  WRD $0018
+  WRD $1800
+  WRD $0000
+ ; ASCII 250 
+  WRD $0000
+  WRD $0000
+  WRD $1800
+  WRD $0000
+ ; ASCII 251 
+  WRD $0F0C
+  WRD $0C0C
+  WRD $EC6C
+  WRD $3C1C
+ ; ASCII 252 
+  WRD $786C
+  WRD $6C6C
+  WRD $6C00
+  WRD $0000
+ ; ASCII 253 
+  WRD $7C0C
+  WRD $7C60
+  WRD $7C00
+  WRD $0000
+ ; ASCII 254 
+  WRD $0000
+  WRD $3C3C
+  WRD $3C3C
+  WRD $0000
+ ; ASCII 255 
+  WRD $0010
+  WRD $0000
+  WRD $0000
+  WRD $0000
+
+; R0=0
+; R1=1
+
+; R2 - PARAMSTACK
+; R3 - RETURN STACK
+; R4 - IP
+
+; R9 - POINTS TO NEXT1
+
+;   EXIT	( -- )
+;		Terminate a colon definition.
+
+      WRD 0
+L000  WRD $04
+      TXT "EXIT"
+      WRD 0
+EXITT WRD EXIT1
+
+EXIT1:
+      LOD R4,R4,R3
+      ADD R3,R3,R1  ; POP IP
+NEXT1:
+      LOD R5,R5,R4  ; LOAD R5(IP), POINTS TO START
+      ADD R4,R4,R1  ; INC IP
+NEXT2:
+      LOD R15,R15,R5  ; JUMP TO  ROUTINE
+
+LIST1:
+      SUB R3,R3,R1  ; PUSH IP
+      STO R4,R4,R3
+      ADD R5,R5,R1  ; R5 POINTED TO PREFIX WORD, NOW TO ACTUAL CODE
+      ORA R4,R5,R5  ; NOW MOVE IP
+      LOD R5,R5,R4  ; LOAD R5(IP), POINTS TO START
+      ADD R4,R4,R1  ; INC IP
+      LOD R15,R15,R5  ; JUMP TO  ROUTINE
+
+;   EXECUTE	( ca -- )
+;		Execute the word at ca.
+
+      WRD L000
+L001  WRD $07
+      TXT "EXECUTE"
+      WRD 0
+EXECU WRD EXEC1
+EXEC1 LOD R5,R5,R2   ; POP WORKING REGISTER
+      ADD R2,R2,R1
+      LOD R15,R5,R5  ; JUMP TO POINTED WORKING REGISTER
+
+;   _LIT       ( -- w )
+;               Push an inline literal.
+
+      WRD L001
+L002  WRD $04
+      TXT "_LIT"
+      WRD ECOMP
+ULIT  WRD ULIT1
+ULIT1 LOD R5,R5,R4    ; GET LITERAL IN NEXT WORD
+      ADD R4,R4,R1    ; ADVANCE IP
+      SUB R2,R2,R1    ; PUSH LITERAL
+      STO R5,R5,R2
+      ORA R15,R9,R9  ; JUMP NEXT1
+
+;   _ELSE	( -- )
+;		Branch to an inline address.
+
+      WRD L002
+L003  WRD $05
+      TXT "_ELSE"
+      WRD ECOMP
+UELSE WRD UELS1
+UELS1 LOD R4,R4,R4    ; SET IP TO INLINE LITERAL
+      ORA R15,R9,R9  ; JUMP NEXT1
+
+;   _IF	( f -- )
+;		Branch if flag is zero.
+      WRD L003
+L004  WRD $03
+      TXT "_IF"
+      WRD ECOMP
+UIF   WRD UIF1
+UIF1  LOD R5,R5,R2    ; POP TOP VALUE FROM PARAMETER STACK
+      ADD R2,R2,R1
+      GTU R6,R5,R0    ; IF R5>0, i.e R5!=0 THEN R6=1     
+      ADD R4,R4,R6    ; IF NOT ZERO ADVANCE AFTER LITERAL
+      ADD R15,R15,R6  ; SKIP NEXT IF NOT ZERO 
+      LOD R4,R4,R4    ; SET IP TO INLINE LITERAL
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   C!		( c b -- )
+;		Pop the data stack to byte memory.
+      WRD L004
+L005  WRD $02
+      TXT "C!"
+      WRD 0
+CSTOR WRD CSTO1
+CSTO1 LOD R5,R5,R2      ;  POP ADDRESS  SVEU16 HAS NO DIFFERENCE BETWEEN ! AND C!
+      ADD R2,R2,R1
+      LOD R6,R6,R2      ;  POP VALUE
+      ADD R2,R2,R1
+      STO R6,R6,R5      ; POKE VALUE
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   C@		( b -- c )
+;		Push byte memory location to the data stack.
+      WRD L005
+L006  WRD $02
+      TXT "C@"
+      WRD 0
+CAT   WRD CAT1
+CAT1  LOD R7,R7,R15   ; GET CONSTANT
+      WRD 255
+      LOD R5,R5,R2    ; GET ADDRESS FROM PARAMETER STACK
+      LOD R6,R6,R5    ; GET VALUE AT THE ADDRESS
+      AND R6,R6,R7    ; ZERO UPPER 8 BITS
+      STO R6,R6,R2    ; STORE VALUE TO THE PARAMETER STACK TOP
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   !		( w a -- )
+;		Pop the data stack to memory.
+      WRD L006
+L007  WRD $01
+      TXT "!"
+      WRD 0
+STORE WRD STOR1
+STOR1 LOD R5,R5,R2      ;  POP ADDRESS
+      ADD R2,R2,R1
+      LOD R6,R6,R2      ;  POP VALUE
+      ADD R2,R2,R1
+      STO R6,R6,R5      ; POKE VALUE
+      ORA R15,R9,R9    ; JUMP NEXT1
+;   @		( a -- w )
+;		Push memory location to the data stack.
+      WRD L007
+L008  WRD $01
+      TXT "@"
+      WRD 0
+ATT   WRD AT1
+AT1   LOD R5,R5,R2    ; GET ADDRESS FROM PARAMETER STACK
+      LOD R6,R6,R5    ; GET VALUE AT THE ADDRESS
+      STO R6,R6,R2    ; STORE VALUE TO THE PARAMETER STACK TOP
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   RP@		( -- a )
+;		Push the current RP to the data stack.
+      WRD L008
+L009  WRD $03
+      TXT "RP@"
+      WRD 0
+RPAT  WRD RPAT1
+RPAT1 SUB R2,R2,R1    ; PUSH RETURN STACK POINTER TO PARAMETER STACK
+      STO R3,R3,R2
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   RP!		( a -- )
+;		Set the return stack pointer.
+      WRD L009
+L010  WRD $03
+      TXT "RP!"
+      WRD ECOMP
+RPSTO WRD RPST1
+RPST1 LOD R3,R3,R2   ; POP RETURN STACK POINTER FROM PARAMETER STACK
+      ADD R2,R2,R1
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   >R		( w -- )
+;		Push the data stack to the return stack.
+
+      WRD L010
+L011  WRD $02
+      TXT ">R"
+      WRD ECOMP
+TOR   WRD TOR1
+TOR1  LOD R5,R5,R2    ; POP PARAMETER STACK
+      ADD R2,R2,R1
+      SUB R3,R3,R1    ; PUSH TO RETURN STACK
+      STO R5,R5,R3
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   R@		( -- w )
+;		Copy top of return stack to the data stack.
+      WRD L011
+L012  WRD $02
+      TXT "R@"
+      WRD 0
+RAT   WRD RAT1
+RAT1  LOD R5,R5,R3    ; GET TOP OF RETURN STACK
+      SUB R2,R2,R1    ; PUSH TO PARAMETER STACK
+      STO R5,R5,R2
+      ORA R15,R9,R9  ; JUMP NEXT1
+
+;   R>		( -- w )
+;		Pop the return stack to the data stack.
+
+      WRD L012
+L013  WRD $02
+      TXT "R>"
+      WRD ECOMP
+RFROM WRD RFRO1
+RFRO1 LOD R5,R5,R3    ; POP RETURN STACK
+      ADD R3,R3,R1
+      SUB R2,R2,R1    ; PUSH TO PARAMETER STACK
+      STO R5,R5,R2
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   SP@		( -- a )
+;		Push the current data stack pointer.
+      WRD L013
+L014  WRD $03
+      TXT "SP@"
+      WRD 0
+SPAT  WRD SPAT1
+SPAT1 ORA R5,R2,R2    ; GET PARAMETER STACK POINTER
+      SUB R2,R2,R1    ; PUSH TO PARAMETER STACK
+      STO R5,R5,R2
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   SP!		( a -- )
+;		Set the data stack pointer.
+      WRD L014
+L015  WRD $03
+      TXT "SP!"
+      WRD 0
+SPSTO WRD SPST1
+SPST1 LOD R2,R2,R2    ; GET STACK POINTER FROM PARAMETER STACK TOP
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   DROP	( w -- )
+;		Discard top stack item.
+      WRD L015
+L016  WRD $04
+      TXT "DROP"
+      WRD 0
+DROP  WRD DROP1
+DROP1 ADD R2,R2,R1    ; INCREMENT PARAMETER SP
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   SWAP	( w1 w2 -- w2 w1 )
+;		Exchange top two stack items.
+      WRD L016
+L017  WRD $04
+      TXT "SWAP"
+      WRD 0
+SWAP  WRD SWAP1
+SWAP1 ORA R6,R2,R2       ; GET PARAMETER SP
+      ADD R6,R6,R1       ; INCREMENT IT
+      LOD R5,R5,R2       ; GET TOPMOST
+      LOD R7,R7,R6       ; GET SECOND
+      STO R5,R5,R6       ; PUT FORMER TOPMOST
+      STO R7,R7,R2       ; PUT FORMER SECOND
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   DUP		( w -- w w )
+;		Duplicate the top stack item.
+      WRD L017
+L018  WRD $03
+      TXT "DUP"
+      WRD 0
+DUP   WRD DUP1
+DUP1  LOD R5,R5,R2    ; GET TOP OF STACK VALUE
+      SUB R2,R2,R1
+      STO R5,R5,R2    ; PUSH IT
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   OVER	( w1 w2 -- w1 w2 w1 )
+;		Copy second stack item to top.
+      WRD L018
+L019  WRD $04
+      TXT "OVER"
+      WRD 0
+OVER  WRD OVER1
+OVER1 ORA R6,R2,R2    ; GET PARAMETER STACK POINTER
+      ADD R6,R6,R1    ; VALUE BELOW
+      LOD R5,R5,R6    ; GET IT
+      SUB R2,R2,R1    ; PUSH IT
+      STO R5,R5,R2 
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   CHAR- ( a -- a )
+;               Decrement address at top by 1 characer size
+      WRD L019
+L020  WRD $05
+      TXT "CHAR-"
+      WRD 0
+CHARM WRD CHRM1
+CHRM1 LOD R5,R5,R2    ; DECREMENT VAUE ON PARAMETER STACK
+      SUB R5,R5,R1
+      STO R5,R5,R2
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   CHAR+ ( a -- a )
+;               Increment address at top by 1 characer size
+      WRD L020
+L021  WRD $05
+      TXT "CHAR+"
+      WRD 0
+CHARP WRD CHRP1
+CHRP1 LOD R5,R5,R2    ; INCREMENT VAUE ON PARAMETER STACK
+      ADD R5,R5,R1
+      STO R5,R5,R2
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   CHARS ( a -- a )
+;               Multiply address at top by 1 characer size
+
+      WRD L021
+L022  WRD $05
+      TXT "CHARS"
+      WRD EIMED
+CHARS WRD CHRS1
+CHRS1 ORA R15,R9,R9  ; JUMP NEXT1 DO NOTHING???
+;   CELL- ( a -- a )
+;               Decrement address at top by 1 cell size
+
+      WRD L022
+L023  WRD $05
+      TXT "CELL-"
+      WRD 0
+CELLM WRD CELM1
+CELM1:
+      LOD R5,R5,R2    ; DECREMENT VAUE ON PARAMETER STACK BY ONE CELL
+      SUB R5,R5,R1    ; SHOULD BE REPEATED FOR MULTIBYTE CELLS
+      STO R5,R5,R2
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   CELL+ ( a -- a )
+;               Increment address at top by 1 cell size
+
+
+      WRD L023
+L024  WRD $05
+      TXT "CELL+"
+      WRD 0
+CELLP WRD CELP1
+CELP1:
+      LOD R5,R5,R2    ; INCREMENT VAUE ON PARAMETER STACK BY ONE CELL
+      ADD R5,R5,R1    ; SHOULD BE REPEATED FOR MULTIBYTE CELLS
+      STO R5,R5,R2
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   CELL+ ( a -- a )
+;               Multiply address at top by 1 cell size
+
+      WRD L024
+L025  WRD $05
+      TXT "CELLS"
+      WRD 0
+CELLS WRD CELS1
+CELS1:
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   0<		( n -- t )
+;		Return true if n is negative.
+      WRD L025
+L026  WRD $02
+      TXT "0<"
+      WRD 0
+ZLESS WRD ZLES1
+ZLES1 LOD R5,R5,R2     ; GET PARAMETER STACK TOP
+      LDC R6,15        ; ARITHMETIC SHIFT RIGHT 15 TIMES
+      SHR R5,R5,R6
+      STO R5,R5,R2
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   AND		( w w -- w )
+;		Bitwise AND.
+      WRD L026
+L027  WRD $03
+      TXT "AND"
+      WRD 0
+ANDD  WRD ANDD1
+ANDD1 
+      LOD R5,R5,R2    ; POP TOP VALUE FROM PARAMETER STACK
+      ADD R2,R2,R1
+      LOD R6,R6,R2    ; READ NEW TOP VALUE AT PARAMETER STACK
+      AND R5,R5,R6    ; PERFORM LOGICAL OPERATION
+      STO R5,R5,R2    ; STORE OPERATION RESULT
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   OR		( w w -- w )
+;		Bitwise inclusive OR.
+      WRD L027
+L028  WRD $02
+      TXT "OR"
+      WRD 0
+ORR   WRD ORR1
+ORR1  LOD R5,R5,R2    ; POP TOP VALUE FROM PARAMETER STACK
+      ADD R2,R2,R1
+      LOD R6,R6,R2    ; READ NEW TOP VALUE AT PARAMETER STACK
+      ORA R5,R5,R6    ; PERFORM LOGICAL OPERATION
+      STO R5,R5,R2    ; STORE OPERATION RESULT
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   XOR		( w w -- w )
+;		Bitwise exclusive OR.
+      WRD L028
+L029  WRD $03
+      TXT "XOR"
+      WRD 0
+XORR  WRD XORR1
+XORR1 LOD R5,R5,R2    ; POP TOP VALUE FROM PARAMETER STACK
+      ADD R2,R2,R1
+      LOD R6,R6,R2    ; READ NEW TOP VALUE AT PARAMETER STACK
+      XOR R5,R5,R6    ; PERFORM LOGICAL OPERATION
+      STO R5,R5,R2    ; STORE OPERATION RESULT
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   UM+		( w w -- w cy )
+;		Add two numbers, return the sum and carry flag.
+      WRD L029
+L030  WRD $03
+      TXT "UM+"
+      WRD 0
+UMPLU WRD UMPL1
+UMPL1 ORA R7,R2,R2    ; GET ADDRESS OF THE SECOND OPERAND
+      ADD R7,R7,R1
+      LOD R5,R5,R2    ; GET FIRST OPERAND
+      LOD R6,R6,R7    ; GET SECOND OPERAND
+      ADD R6,R5,R6    ; R6 CONTAINS SUM
+      LTU R5,R6,R5    ; IF SUM IS SMALLER THAN OPERAND, R5=CARRY
+      STO R5,R5,R2    ; CARRY TO STACK TOP
+      STO R6,R6,R7    ; SUM TO BELOW TOP
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   !IO		( -- )
+;		Initialize the serial I/O devices.
+      WRD L030
+L031  WRD $03
+      TXT "!IO"
+      WRD 0
+STOIO WRD STIO1
+STIO1                  ; ADD CODE TO INITIALIZE I/O
+      ORA R15,R9,R9  ; JUMP NEXT1
+;   ?RX		( -- c T | F )
+;		Return input character and true, or a false if no input.
+      WRD L031
+L032  WRD $03
+      TXT "?RX"
+      WRD 0
+QRX   WRD QRX1
+QRX1                 ; ADD CODE TO CHECK KEYBOARD OR SERIAL PORT
+
+      LOD R6,R6,R15  ; GET ADDRESS
+      WRD $FFF1
+      LOD R5,R5,R6   ; GET CHAR
+      LOD R7,R7,R15  ; JUMP ADDRESS
+      WRD YESCHAR
+      EQU R6,R5,R0   ; SET SKIP VALUE
+      ADD R15,R15,R6
+      ORA R15,R7,R7
+NOCHAR:
+      SUB R2,R2,R1   ; PUSH FALSE
+      STO R0,R0,R2      
+      ORA R15,R9,R9  ; JUMP NEXT1
+YESCHAR:
+      SUB R2,R2,R1   ; PUSH KEY ASCII CODE
+      STO R5,R5,R2      
+      SUB R5,R0,R1   ; PUSH TRUE
+      SUB R2,R2,R1 
+      STO R5,R5,R2      
+      ORA R15,R9,R9  ; JUMP NEXT1
+
+
+;   TX!		( c -- )
+;		Send character c to the output device.
+      WRD L032
+L033  WRD $03
+      TXT "TX!"
+      WRD 0
+TXSTO WRD TXST1
+TXST1 LOD R5,R5,R2    ; POP CHARACTER TO DISPLAY
+      ADD R2,R2,R1   
+
+  ;  ADD CODE TO DISPLAY THE CHARACTER
+
+      LOD R12,R12,R15     ; ASCII CHARACTER
+      WRD DRAWCHAR
+      MAJ R11,R15,R12
+
+      LOD R6,R6,R15  ; GET ADDRESS
+      WRD $FFF2
+      STO R5,R5,R6      
+
+      ORA R15,R9,R9  ; JUMP NEXT1
+
+; L!, L@ REMOVED
+
+      WRD L033
+L036  WRD $04
+      TXT "NOOP"
+      WRD 0
+NOOP  WRD LIST1
+      WRD EXITT
+
+      WRD L036
+L037  WRD $04
+      TXT "_VAR"
+      WRD ECOMP
+UVAR  WRD LIST1
+      WRD RFROM
+      WRD EXITT
+
+      WRD L037
+L038  WRD $04
+      TXT "_CON"
+      WRD ECOMP
+UCON  WRD LIST1
+      WRD RFROM
+      WRD ATT
+      WRD EXITT
+;   '?KEY	( -- a )
+;		Execution vector of ?KEY.
+      WRD L038
+L039  WRD $05
+      TXT "'?KEY"
+      WRD 0
+TQKEY WRD LIST1
+      WRD UVAR
+      WRD QRX
+;   'EMIT	( -- a )
+;		Execution vector of EMIT.
+      WRD L039
+L040  WRD $05
+      TXT "'EMIT"
+      WRD 0
+TEMIT WRD LIST1
+      WRD UVAR
+      WRD TXSTO
+;   BASE	( -- a )
+;		Storage of the radix base for numeric I/O.
+      WRD L040
+L041  WRD $04
+      TXT "BASE"
+      WRD 0
+BASE  WRD LIST1
+      WRD UVAR
+      WRD 0
+;   DPL	( -- a )
+;		numeric input decimal place.
+      WRD L041
+L042  WRD $03
+      TXT "DPL"
+      WRD 0
+DPL   WRD LIST1
+      WRD UVAR
+      WRD 0
+;   HLD		( -- a )
+;		Hold a pointer in building a numeric output string.
+      WRD L042
+L043  WRD $03
+      TXT "HLD"
+      WRD 0
+HLD   WRD LIST1
+      WRD UVAR
+      WRD 0
+;   >IN		( -- a )
+;		Hold the character pointer while parsing input stream.
+
+      WRD L043
+L044  WRD $03
+      TXT ">IN"
+      WRD 0
+TOIN  WRD LIST1
+      WRD UVAR
+      WRD 0
+;   #IN		( -- a )
+;		Hold the input buffer count while parsing input stream.
+
+      WRD L044
+L045  WRD $03
+      TXT "#IN"
+      WRD 0
+NIN   WRD LIST1
+      WRD UVAR
+      WRD 0
+      WRD 0
+;   CSP		( -- a )
+;		Hold the stack pointer for error checking.
+      WRD L045
+L046  WRD $03
+      TXT "CSP"
+      WRD 0
+CSP   WRD LIST1
+      WRD UVAR
+      WRD 0
+;   STATE	( -- a )
+;		Hold the interpret/compile flag.
+      WRD L046
+L047  WRD $05
+      TXT "STATE"
+      WRD 0
+STATE WRD LIST1
+      WRD UVAR
+      WRD 0
+      WRD 0
+;   DP		( -- a )
+;		Hold the dictionary pointer.
+      WRD L047
+L048  WRD $02
+      TXT "DP"
+      WRD 0
+DP    WRD LIST1
+      WRD UVAR
+      WRD HERE0
+      WRD 0
+;   SUP		( -- a )
+;		Initial stack pointers.
+
+      WRD L048
+L049  WRD $03
+      TXT "SUP"
+      WRD 0
+SUP   WRD LIST1
+      WRD UVAR
+SUP1  WRD EUP
+SUPRP WRD ERP
+SUPSP WRD ESPP
+;   BL		( -- 32 )
+;		Return 32, the blank character.
+      WRD L049
+L050  WRD $02
+      TXT "BL"
+      WRD 0
+BLL   WRD LIST1
+      WRD UCON
+      WRD EBL
+;   HEX		( -- )
+;		Use radix 16 as base for numeric conversions.
+      WRD L050
+L051  WRD $03
+      TXT "HEX"
+      WRD 0
+HEXX  WRD LIST1
+      WRD ULIT
+        WRD $10
+      WRD BASE
+      WRD STORE
+      WRD EXITT
+;   DECIMAL	( -- )
+;		Use radix 10 as base for numeric conversions.
+      WRD L051
+L052  WRD $07
+      TXT "DECIMAL"
+      WRD 0
+DECIM WRD LIST1
+      WRD ULIT
+        WRD $0A
+      WRD BASE
+      WRD STORE
+      WRD EXITT
+;   ROT		( w1 w2 w3 -- w2 w3 w1 )
+;		Rot 3rd item to top.
+      WRD L052
+L053  WRD $03
+      TXT "ROT"
+      WRD 0
+ROT   WRD LIST1
+      WRD TOR
+      WRD SWAP
+      WRD RFROM
+      WRD SWAP
+      WRD EXITT
+;   NIP ( n1 n2 -- n2 )
+;        Remove 2nd item from stack
+      WRD L053
+L054  WRD $03
+      TXT "NIP"
+      WRD 0
+NIP   WRD LIST1
+      WRD SWAP
+      WRD DROP
+      WRD EXITT
+;   2DROP	( w w -- )
+;		Discard two items on stack.
+      WRD L054
+L055  WRD $05
+      TXT "2DROP"
+      WRD 0
+TDROP WRD LIST1
+      WRD DROP
+      WRD DROP
+      WRD EXITT
+;   2DUP	( w1 w2 -- w1 w2 w1 w2 )
+;		Duplicate top two items.
+      WRD L055
+L056  WRD $04
+      TXT "2DUP"
+      WRD 0
+TDUP  WRD LIST1
+      WRD OVER
+      WRD OVER
+      WRD EXITT
+;   ?DUP	( w -- w w | 0 )
+;		Dup tos if its is not zero.
+      WRD L056
+L057  WRD $04
+      TXT "?DUP"
+      WRD 0
+QDUP  WRD LIST1
+      WRD DUP
+      WRD UIF
+        WRD QDUP1
+      WRD DUP
+QDUP1 WRD EXITT
+;   +		( w w -- sum )
+;		Add top two items.
+      WRD L057
+L058  WRD $01
+      TXT "+"
+      WRD 0
+PLUS  WRD LIST1
+      WRD UMPLU
+      WRD DROP
+      WRD EXITT
+;   D+		( d d -- d )
+;		Double addition
+      WRD L058
+L059  WRD $02
+      TXT "D+"
+      WRD 0
+DPLUS WRD LIST1
+      WRD TOR
+      WRD SWAP
+      WRD TOR
+      WRD UMPLU
+      WRD RFROM
+      WRD PLUS
+      WRD RFROM
+      WRD PLUS
+      WRD EXITT
+;   INVERT ( n -- n )
+;      One complement of the stack top
+      WRD L059
+L060  WRD $06
+      TXT "INVERT"
+      WRD 0
+INVER WRD LIST1
+      WRD ULIT
+        WRD $FFFF
+      WRD XORR
+      WRD EXITT
+;   NEGATE	( n -- -n )
+;		Two's complement of tos.
+
+      WRD L060
+L061  WRD $06
+      TXT "NEGATE"
+      WRD 0
+NEGAT WRD LIST1
+      WRD INVER
+      WRD ULIT
+        WRD $01
+      WRD PLUS
+      WRD EXITT
+;   DNEGATE	( d -- -d )
+;		Two's complement of top double.
+      WRD L061
+L062  WRD $07
+      TXT "DNEGATE"
+      WRD 0
+DNEGA WRD LIST1
+      WRD INVER
+      WRD TOR
+      WRD INVER
+      WRD ULIT
+        WRD $01
+      WRD UMPLU
+      WRD RFROM
+      WRD PLUS
+      WRD EXITT
+;    S>D ( n -- d )
+;       Convert single to double number by sign extension
+      WRD L062
+L063  WRD $03
+      TXT "S>D"
+      WRD 0
+STOD  WRD LIST1
+      WRD DUP
+      WRD ZLESS
+      WRD EXITT
+;   ABS		( n -- n )
+;		Return the absolute value of n.
+      WRD L063
+L064  WRD $03
+      TXT "ABS"
+      WRD 0
+ABSS  WRD LIST1
+      WRD DUP
+      WRD ZLESS
+      WRD UIF
+        WRD ABS1
+      WRD NEGAT
+ABS1  WRD EXITT
+;   DABS ( d -- ud )
+;           Return absolute value of double number
+      WRD L064
+L065  WRD $04
+      TXT "DABS"
+      WRD 0
+DABS  WRD LIST1
+      WRD DUP
+      WRD ZLESS
+      WRD UIF
+        WRD DABS1
+      WRD DNEGA
+DABS1 WRD EXITT
+;   -		( n1 n2 -- n1-n2 )
+;		Subtraction.
+      WRD L065
+L066  WRD $01
+      TXT "-"
+      WRD 0
+MINUS WRD LIST1
+      WRD NEGAT
+      WRD PLUS
+      WRD EXITT
+;     PICK  ( xu...x1 x0 u -- xu...x1 x0 xu )
+;         Remove u. Copy the xu to the top of the stack.
+      WRD L066
+L067  WRD $04
+      TXT "PICK"
+      WRD 0
+PICK  WRD LIST1
+      WRD QDUP
+      WRD UIF
+        WRD PICK1
+      WRD SWAP
+      WRD TOR
+      WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD PICK
+      WRD RFROM
+      WRD SWAP
+      WRD EXITT
+PICK1 WRD DUP
+      WRD EXITT
+;  0=          ( n -- f ) 
+;      Test if number equal to zero
+      WRD L067
+L068  WRD $02
+      TXT "0="
+      WRD 0
+ZEQ   WRD LIST1
+      WRD UIF
+        WRD ZEQ1
+      WRD ULIT
+        WRD 0
+      WRD EXITT
+ZEQ1  WRD ULIT
+        WRD $FFFF
+      WRD EXITT
+;   =		( w w -- t )
+;		Return true if top two are equal.
+      WRD L068
+L069  WRD $01
+      TXT "="
+      WRD 0
+EQUAL WRD LIST1
+      WRD XORR
+      WRD ZEQ
+      WRD EXITT
+;   U<		( u u -- t )
+;		Unsigned compare of top two items.
+      WRD L069
+L070  WRD $02
+      TXT "U<"
+      WRD 0
+ULESS WRD LIST1
+      WRD TDUP
+      WRD XORR
+      WRD ZLESS
+      WRD UIF
+        WRD ULES1
+      WRD NIP
+      WRD ZLESS
+      WRD EXITT
+ULES1 WRD MINUS
+      WRD ZLESS
+      WRD EXITT
+;   <		( n1 n2 -- t )
+;		Signed compare of top two items.
+      WRD L070
+L071  WRD $01
+      TXT "<"
+      WRD 0
+LESS  WRD LIST1
+      WRD TDUP
+      WRD XORR
+      WRD ZLESS
+      WRD UIF
+        WRD LESS1
+      WRD DROP
+      WRD ZLESS
+      WRD EXITT
+LESS1 WRD MINUS
+      WRD ZLESS
+      WRD EXITT
+;   MAX		( n n -- n )
+;		Return the greater of two top stack items.
+      WRD L071
+L072  WRD $03
+      TXT "MAX"
+      WRD 0
+MAX   WRD LIST1
+      WRD TDUP
+      WRD LESS
+      WRD UIF
+        WRD MAX1
+      WRD SWAP
+MAX1  WRD DROP
+      WRD EXITT
+;   MIN		( n n -- n )
+;		Return the smaller of top two stack items.
+      WRD L072
+L073  WRD $03
+      TXT "MIN"
+      WRD 0
+MIN   WRD LIST1
+      WRD TDUP
+      WRD SWAP
+      WRD LESS
+      WRD UIF
+        WRD MIN1
+      WRD SWAP
+MIN1  WRD DROP
+      WRD EXITT
+;   WITHIN	( u ul uh -- t )
+;		Return true if u is within the range of ul and uh.
+      WRD L073
+L074  WRD $06
+      TXT "WITHIN"
+      WRD 0
+WITHI WRD LIST1
+      WRD OVER
+      WRD MINUS
+      WRD TOR
+      WRD MINUS
+      WRD RFROM
+      WRD ULESS
+      WRD EXITT
+;  LSHIFT ( x1 u -- x2 )
+; Perform a logical left shift of u bit-places on x1, giving x2. 
+      WRD L074
+L075  WRD $06
+      TXT "LSHIFT"
+      WRD 0
+LSHIF WRD LIST1
+LSHI1 WRD DUP
+      WRD UIF
+        WRD LSHI2
+      WRD TOR
+      WRD DUP
+      WRD PLUS
+      WRD RFROM
+      WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD UELSE
+        WRD LSHI1
+LSHI2 WRD DROP
+      WRD EXITT
+;   UM*		( u u -- ud )
+;		Unsigned multiply. Return double product.
+      WRD L075
+L076  WRD $03
+      TXT "UM*"
+      WRD 0
+UMSTA WRD LIST1
+      WRD ULIT
+        WRD 0
+      WRD SWAP
+      WRD ULIT
+        WRD NBITS
+UMST1 WRD DUP
+      WRD UIF
+        WRD UMST3
+      WRD TOR
+      WRD DUP
+      WRD UMPLU
+      WRD TOR
+      WRD TOR
+      WRD DUP
+      WRD UMPLU
+      WRD RFROM
+      WRD PLUS
+      WRD RFROM
+      WRD UIF
+        WRD UMST2
+      WRD TOR
+      WRD OVER
+      WRD UMPLU
+      WRD RFROM
+      WRD PLUS
+UMST2 WRD RFROM
+      WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD UELSE
+        WRD UMST1
+UMST3 WRD DROP
+      WRD TOR
+      WRD NIP
+      WRD RFROM
+      WRD EXITT
+;   *		( n n -- n )
+;		Signed multiply. Return single product.
+      WRD L076
+L077  WRD $01
+      TXT "*"
+      WRD 0
+STAR  WRD LIST1
+      WRD UMSTA
+      WRD DROP
+      WRD EXITT
+;   RSHIFT  ( x1 u -- x2 )
+; Perform a logical right shift of u bit-places on x1, giving x2. 
+      WRD L077
+L078  WRD $06
+      TXT "RSHIFT"
+      WRD 0
+RSHIF WRD LIST1
+      WRD ULIT
+        WRD 0
+      WRD SWAP
+      WRD ULIT
+        WRD NBITS
+      WRD SWAP
+      WRD MINUS
+RSHI1 WRD DUP
+      WRD UIF
+        WRD RSHI2
+      WRD TOR
+      WRD TDUP
+      WRD DPLUS
+      WRD RFROM
+      WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD UELSE
+        WRD RSHI1
+RSHI2 WRD DROP
+      WRD NIP
+      WRD EXITT
+;   UM/MOD	( udl udh u -- ur uq )
+;		Unsigned divide of a double by a single. Return mod and quotient.
+
+      WRD L078
+L079  WRD $06
+      TXT "UM/MOD"
+      WRD 0
+UMMOD WRD LIST1
+      WRD TDUP
+      WRD ULESS
+      WRD UIF
+        WRD UMMO5
+      WRD NEGAT
+      WRD ULIT
+        WRD NBITS
+UMMO1 WRD DUP
+      WRD UIF
+        WRD UMMO4
+      WRD TOR
+      WRD TOR
+      WRD DUP
+      WRD UMPLU
+      WRD TOR
+      WRD TOR
+      WRD DUP
+      WRD UMPLU
+      WRD RFROM
+      WRD PLUS
+      WRD DUP
+      WRD RFROM
+      WRD RAT
+      WRD SWAP
+      WRD TOR
+      WRD UMPLU
+      WRD RFROM
+      WRD ORR
+      WRD UIF
+        WRD UMMO2
+      WRD TOR
+      WRD DROP
+      WRD ULIT
+        WRD $01
+      WRD PLUS
+      WRD RFROM
+      WRD UELSE
+        WRD UMMO3
+UMMO2 WRD DROP
+UMMO3 WRD RFROM
+      WRD RFROM
+      WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD UELSE
+        WRD UMMO1
+UMMO4 WRD TDROP
+      WRD SWAP
+      WRD EXITT
+UMMO5 WRD DROP
+      WRD TDROP
+      WRD ULIT
+        WRD $FFFF
+      WRD DUP
+      WRD EXITT
+;   SM/REM ( d1 n1 -- n2 n3 )
+;      Divide signed d1 by n1, giving the symmetric quotient n3 and the remainder n2. 
+      WRD L079
+L080  WRD $06
+      TXT "SM/REM"
+      WRD 0
+SMREM WRD LIST1
+      WRD OVER
+      WRD TOR
+      WRD TOR
+      WRD DABS
+      WRD RAT
+      WRD ABSS
+      WRD UMMOD
+      WRD RFROM
+      WRD RAT
+      WRD XORR
+      WRD ZLESS
+      WRD UIF
+        WRD SMRE1
+      WRD NEGAT
+SMRE1 WRD RFROM
+      WRD ZLESS
+      WRD UIF
+        WRD SMRE2
+      WRD TOR
+      WRD NEGAT
+      WRD RFROM
+SMRE2 WRD EXITT
+;   FM/MOD  d1 n1 -- n2 n3 )
+;  Divide d1 by n1, giving the floored quotient n3 and the remainder n2. 
+      WRD L080
+L081  WRD $06
+      TXT "FM/MOD"
+      WRD 0
+FMMOD WRD LIST1
+      WRD DUP
+      WRD ZLESS
+      WRD DUP
+      WRD TOR
+      WRD UIF
+        WRD FMMO1
+      WRD NEGAT
+      WRD TOR
+      WRD DNEGA
+      WRD RFROM
+FMMO1 WRD TOR
+      WRD DUP
+      WRD ZLESS
+      WRD UIF
+        WRD FMMO2
+      WRD RAT
+      WRD PLUS
+FMMO2 WRD RFROM
+      WRD UMMOD
+      WRD RFROM
+      WRD UIF
+        WRD FMMO3
+      WRD TOR
+      WRD NEGAT
+      WRD RFROM
+FMMO3 WRD EXITT
+;   /MOD	( n n -- r q )
+;		Signed divide. Return mod and quotient.
+
+      WRD L081
+L082  WRD $04
+      TXT "/MOD"
+      WRD 0
+SMOD  WRD LIST1
+      WRD OVER
+      WRD ZLESS
+      WRD SWAP
+      WRD FMMOD
+      WRD EXITT
+;   MOD		( n n -- r )
+;		Signed divide. Return mod only.
+      WRD L082
+L083  WRD $03
+      TXT "MOD"
+      WRD 0
+MODD  WRD LIST1
+      WRD SMOD
+      WRD DROP
+      WRD EXITT
+;   /		( n n -- q )
+;		Signed divide. Return quotient only.
+      WRD L083
+L084  WRD $01
+      TXT "/"
+      WRD 0
+SLASH WRD LIST1
+      WRD SMOD
+      WRD NIP
+      WRD EXITT
+;   +!		( n a -- )
+;		Add n to the contents at address a.
+      WRD L084
+L085  WRD $02
+      TXT "+!"
+      WRD 0
+PLUST WRD LIST1
+      WRD DUP
+      WRD TOR
+      WRD ATT
+      WRD PLUS
+      WRD RFROM
+      WRD STORE
+      WRD EXITT
+;   COUNT	( b -- b +n )
+;		Return count byte of a string and add 1 to byte address.
+      WRD L085
+L086  WRD $05
+      TXT "COUNT"
+      WRD 0
+COUNT WRD LIST1
+      WRD DUP
+      WRD CHARP
+      WRD SWAP
+      WRD CAT
+      WRD EXITT
+;  BOUNDS ( a n -- a+n a )
+; Given a memory block represented by starting address addr and length, produce the end address addr+u and the start address
+      WRD L086
+L087  WRD $06
+      TXT "BOUNDS"
+      WRD 0
+BNDS  WRD LIST1
+      WRD OVER
+      WRD PLUS
+      WRD SWAP
+      WRD EXITT
+;   /STRING ( c-addr1 u1 n -- c-addr2 u2 )
+;     Adjust the character string at c-addr1 by n characters. The resulting string, c-addr2 u2, begins at c-addr1 plus n characters and is u1 minus n characters long.
+      WRD L087
+L088  WRD $07
+      TXT "/STRING"
+      WRD 0
+SSTRI WRD LIST1
+      WRD DUP
+      WRD TOR
+      WRD MINUS
+      WRD SWAP
+      WRD RFROM
+      WRD PLUS
+      WRD SWAP
+      WRD EXITT
+;   ALIGNED	( b -- a )
+;		Align address to the cell boundary.
+      WRD L088
+L089  WRD $07
+      TXT "ALIGNED"
+      WRD EIMED
+ALGND WRD LIST1
+      WRD EXITT
+;   2!		( d a -- )
+;		Store the double integer to address a.
+      WRD L089
+L090  WRD $02
+      TXT "2!"
+      WRD 0
+TSTOR WRD LIST1
+      WRD SWAP
+      WRD OVER
+      WRD STORE
+      WRD CELLP
+      WRD STORE
+      WRD EXITT
+;   2@		( a -- d )
+;		Fetch double integer from address a.
+      WRD L090
+L091  WRD $02
+      TXT "2@"
+      WRD 0
+TAT   WRD LIST1
+      WRD DUP
+      WRD CELLP
+      WRD ATT
+      WRD SWAP
+      WRD ATT
+      WRD EXITT
+
+
+; MOVE ( addr1 addr2 u -- )
+;    If u >0 copy the contents of u consecutive address units at addr1 to the u consecutive address units at addr2. 
+      WRD L091
+L092  WRD $04
+      TXT "MOVE"
+      WRD 0
+MOVE  WRD LIST1
+      WRD TOR
+      WRD TDUP
+      WRD ULESS
+      WRD UIF
+        WRD MOVE3
+MOVE1 WRD RFROM
+      WRD DUP
+      WRD UIF
+        WRD MOVE2
+      WRD CHARM
+      WRD TOR
+      WRD OVER
+      WRD RAT
+      WRD PLUS
+      WRD CAT
+      WRD OVER
+      WRD RAT
+      WRD PLUS
+      WRD CSTOR
+      WRD UELSE
+        WRD MOVE1
+MOVE2 WRD DROP
+      WRD TDROP
+      WRD EXITT
+MOVE3 WRD RFROM
+      WRD OVER
+      WRD PLUS
+      WRD TOR
+MOVE4 WRD DUP
+      WRD RAT
+      WRD XORR
+      WRD UIF
+        WRD MOVE5
+      WRD TOR
+      WRD DUP
+      WRD CAT
+      WRD RAT
+      WRD CSTOR
+      WRD CHARP
+      WRD RFROM
+      WRD CHARP
+      WRD UELSE
+        WRD MOVE4
+MOVE5 WRD RFROM
+      WRD DROP
+      WRD TDROP
+      WRD EXITT
+;   FILL	( b u c -- )
+;		Fill u bytes of character c to area beginning at b.
+
+      WRD L092
+L093  WRD $04
+      TXT "FILL"
+      WRD 0
+FILLL WRD LIST1
+      WRD TOR
+      WRD BNDS
+FILL1 WRD TDUP
+      WRD XORR
+      WRD UIF
+        WRD FILL2
+      WRD RAT
+      WRD OVER
+      WRD CSTOR
+      WRD CHARP
+      WRD UELSE
+        WRD FILL1
+FILL2 WRD RFROM
+      WRD DROP
+      WRD TDROP
+      WRD EXITT
+;   -TRAILING	( b u -- b u )
+;		Adjust the count to eliminate trailing white space.
+
+      WRD L093
+L094  WRD $09
+      TXT "-TRAILING"
+      WRD 0
+DTRAI WRD LIST1
+DTRA1 WRD DUP
+      WRD UIF
+        WRD DTRA2
+      WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD TDUP
+      WRD PLUS
+      WRD CAT
+      WRD BLL
+      WRD SWAP
+      WRD ULESS
+      WRD UIF
+        WRD DTRA1
+      WRD ULIT
+        WRD $01
+      WRD PLUS
+DTRA2 WRD EXITT
+;  >ADR ( xt -- a )
+;       Convert number to address
+      WRD L094
+L095  WRD $04
+      TXT ">ADR"
+      WRD 0
+TADR  WRD LIST1
+      WRD EXITT
+;   >BODY ( xt -- a-addr )
+;         a-addr is the data-field address corresponding to xt. 
+      WRD L095
+L096  WRD $05
+      TXT ">BODY"
+      WRD 0
+TBODY WRD LIST1
+      WRD CELLP
+      WRD CELLP
+      WRD EXITT
+;   UP		( -- a )
+;		Pointer to the user area.
+
+      WRD L096
+L097  WRD $02
+      TXT "UP"
+      WRD 0
+UP    WRD LIST1
+      WRD UVAR
+      WRD 0
+;   _USR	( -- a )
+;		Run time routine for user variables.
+
+      WRD L097
+L098  WRD $04
+      TXT "_USR"
+      WRD ECOMP
+UUSR  WRD LIST1
+      WRD UP
+      WRD ATT
+      WRD RFROM
+      WRD ATT
+      WRD PLUS
+      WRD EXITT
+
+; FOLLOWER	( -- a )
+; ( address of next task's STATUS )
+      WRD L098
+L099  WRD $08
+      TXT "FOLLOWER"
+      WRD 0
+FOLLO WRD LIST1
+      WRD UUSR
+      WRD 0
+
+;  STATUS 	( -- a )
+;  ( PASS or WAKE )
+
+      WRD L099
+L100  WRD $06
+      TXT "STATUS"
+      WRD 0
+STATU WRD LIST1
+      WRD UUSR
+      WRD -1   ;  0-CELL1
+
+;  TOS    	( -- a )
+;  ( top of stack )
+
+      WRD L100
+L101  WRD $03
+      TXT "TOS"
+      WRD 0
+TOS   WRD LIST1
+      WRD UUSR
+      WRD -2  ; 0-2*CELL1
+
+;  TID    	( -- a )
+;  ( back link tid )
+
+      WRD L101
+L102  WRD $03
+      TXT "TID"
+      WRD 0
+TID   WRD LIST1
+      WRD UUSR
+      WRD -3  ;  0-3*CELL1
+
+;  TF     	( -- a )
+;  ( throw frame )
+
+      WRD L102
+L103  WRD $02
+      TXT "TF"
+      WRD 0
+TF    WRD LIST1
+      WRD UUSR
+      WRD -4   ; 0-4*CELL1
+
+;      U1    	( -- a )
+;   ( free )
+
+
+      WRD L103
+L104  WRD $02
+      TXT "U1"
+      WRD 0
+U1    WRD LIST1
+      WRD UUSR
+      WRD -5  ; 0-5*CELL1
+;  'S ( tid a -- a ) 
+;   ( index another task's local variable )
+
+      WRD L104
+L105  WRD $02
+      TXT "'S"
+      WRD 0
+TICKS WRD LIST1
+      WRD FOLLO
+      WRD CELLP
+      WRD MINUS
+      WRD SWAP
+      WRD ATT
+      WRD PLUS
+      WRD EXITT
+
+      WRD L105
+L106  WRD $05
+      TXT "_PASS"
+      WRD ECOMP
+UPASS WRD LIST1
+      WRD RFROM
+      WRD ATT
+      WRD TOR
+      WRD EXITT
+; PASS ( -- N)
+;       ( constant )
+
+      WRD L106
+L107  WRD $04
+      TXT "PASS"
+      WRD 0
+PASS  WRD LIST1
+      WRD UCON
+      WRD UPASS
+; _WAKE ( -- )
+;       ( restore follower )
+      WRD L107
+L108  WRD $05
+      TXT "_WAKE"
+      WRD ECOMP
+UWAKE WRD LIST1
+      WRD RFROM
+      WRD UP
+      WRD STORE
+      WRD TOS
+      WRD ATT
+      WRD SPSTO
+      WRD RPSTO
+      WRD EXITT
+; WAKE ( -- N)
+;       ( constant )
+      WRD L108
+L109  WRD $04
+      TXT "WAKE"
+      WRD 0
+WAKE  WRD LIST1
+      WRD UCON
+      WRD UWAKE
+; PAUSE ( -- ) 
+;        ( allow another task to execute )
+      WRD L109
+L110  WRD $05
+      TXT "PAUSE"
+      WRD 0
+PAUS  WRD LIST1
+      WRD RPAT
+      WRD SPAT
+      WRD TOS
+      WRD STORE
+      WRD FOLLO
+      WRD ATT
+      WRD TOR
+      WRD EXITT
+      WRD L110
+; STOP ( -- )
+;    ( sleep current task )
+L111  WRD $04
+      TXT "STOP"
+      WRD ECOMP
+STOP  WRD LIST1
+      WRD PASS
+      WRD STATU
+      WRD STORE
+      WRD PAUS
+      WRD EXITT
+; GET      ( semaphore -- )
+;     Wait on semaphore
+      WRD L111
+L112  WRD $03
+      TXT "GET"
+      WRD 0
+GET   WRD LIST1
+      WRD PAUS
+      WRD DUP
+      WRD ATT
+      WRD STATU
+      WRD XORR
+      WRD UIF
+        WRD GET3
+GET1  WRD DUP
+      WRD ATT
+      WRD UIF
+        WRD GET2
+      WRD PAUS
+      WRD UELSE
+        WRD GET1
+GET2  WRD STATU
+      WRD SWAP
+      WRD STORE
+      WRD EXITT
+GET3  WRD DROP
+      WRD EXITT
+;  RELEASE       ( semaphore -- )
+;    release semaphore
+      WRD L112
+L113  WRD $07
+      TXT "RELEASE"
+      WRD 0
+RELEA WRD LIST1
+      WRD DUP
+      WRD ATT
+      WRD STATU
+      WRD XORR
+      WRD UIF
+        WRD RELE1
+      WRD DROP
+      WRD EXITT
+RELE1 WRD ULIT
+        WRD 0
+      WRD SWAP
+      WRD STORE
+      WRD EXITT
+;  SLEEP ( tid -- )
+;       ( sleep another task )
+      WRD L113
+L114  WRD $05
+      TXT "SLEEP"
+      WRD 0
+SLEEP WRD LIST1
+      WRD PASS
+      WRD SWAP
+      WRD STATU
+      WRD TICKS
+      WRD STORE
+      WRD EXITT
+;  AWAKE ( tid -- ) 
+;     ( wake another task )
+      WRD L114
+L115  WRD $05
+      TXT "AWAKE"
+      WRD 0
+AWAKE WRD LIST1
+      WRD WAKE
+      WRD SWAP
+      WRD STATU
+      WRD TICKS
+      WRD STORE
+      WRD EXITT
+;  ACTIVATE ( tid -- )
+      WRD L115
+L116  WRD $08
+      TXT "ACTIVATE"
+      WRD ECOMP
+ACTIV WRD LIST1
+      WRD DUP
+      WRD TAT
+      WRD RFROM
+      WRD OVER
+      WRD STORE
+      WRD OVER
+      WRD STORE
+      WRD OVER
+      WRD TOS
+      WRD TICKS
+      WRD STORE
+      WRD AWAKE
+      WRD EXITT
+; BUILD ( tid -- )
+      WRD L116
+L117  WRD $05
+      TXT "BUILD"
+      WRD 0
+BUILD WRD LIST1
+      WRD DUP
+      WRD SLEEP
+      WRD FOLLO
+      WRD ATT
+      WRD OVER
+      WRD FOLLO
+      WRD TICKS
+      WRD STORE
+      WRD DUP
+      WRD STATU
+      WRD TICKS
+      WRD FOLLO
+      WRD STORE
+      WRD DUP
+      WRD TID
+      WRD TICKS
+      WRD STORE
+      WRD EXITT
+;   DIGIT?	( c base -- u t )
+;		Convert a character to its numeric value. A flag indicates success.
+
+      WRD L117
+L118  WRD $06
+      TXT "DIGIT?"
+      WRD 0
+DIGQ  WRD LIST1
+      WRD TOR
+      WRD ULIT
+         WRD 48  ; ASCII '0'
+      WRD MINUS
+      WRD ULIT
+        WRD $09
+      WRD OVER
+      WRD LESS
+      WRD UIF
+        WRD DIGQ1
+      WRD ULIT
+        WRD $07
+      WRD MINUS
+      WRD DUP
+      WRD ULIT
+        WRD $0A
+      WRD LESS
+      WRD ORR
+DIGQ1 WRD DUP
+      WRD RFROM
+      WRD ULESS
+      WRD EXITT
+; >NUMBER ( ud1 c-addr1 u1 -- ud2 c-addr2 u2 )
+; ud2 is the unsigned result of converting the characters within the string specified by c-addr1 u1 into digits, using the number in BASE, and adding each into ud1 after multiplying ud1 by the number in BASE. 
+      WRD L118
+L119  WRD $07
+      TXT ">NUMBER"
+      WRD 0
+TNUMB WRD LIST1
+TNUM1 WRD DUP
+      WRD UIF
+        WRD TNUM3
+      WRD TOR
+      WRD DUP
+      WRD TOR
+      WRD CAT
+      WRD BASE
+      WRD ATT
+      WRD DIGQ
+      WRD UIF
+        WRD TNUM2
+      WRD SWAP
+      WRD BASE
+      WRD ATT
+      WRD UMSTA
+      WRD DROP
+      WRD ROT
+      WRD BASE
+      WRD ATT
+      WRD UMSTA
+      WRD DPLUS
+      WRD RFROM
+      WRD CHARP
+      WRD RFROM
+      WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD UELSE
+        WRD TNUM1
+TNUM2 WRD DROP
+      WRD RFROM
+      WRD RFROM
+TNUM3 WRD EXITT
+;   NUMBER?	( a -- n T | a F )
+;		Convert a number string to integer. Push a flag on tos.
+
+      WRD L119
+L120  WRD $07
+      TXT "NUMBER?"
+      WRD 0
+NUMQ  WRD LIST1
+      WRD OVER
+      WRD CAT
+      WRD ULIT
+        TXT "-"
+      WRD EQUAL
+      WRD DUP
+      WRD TOR
+      WRD UIF
+        WRD NUMQ1
+      WRD ULIT
+        WRD $01
+      WRD SSTRI
+NUMQ1 WRD TOR
+      WRD TOR
+      WRD ULIT
+        WRD 0
+      WRD DUP
+      WRD RFROM
+      WRD RFROM
+      WRD ULIT
+        WRD -1
+      WRD DPL
+      WRD STORE
+NUMQ2 WRD TNUMB
+      WRD DUP
+      WRD UIF
+        WRD NUMQ4
+      WRD OVER
+      WRD CAT
+      WRD ULIT
+        TXT "."
+      WRD XORR
+      WRD UIF
+        WRD NUMQ3
+      WRD ROT
+      WRD DROP
+      WRD ROT
+      WRD RFROM
+      WRD TDROP
+      WRD ULIT
+        WRD 0
+      WRD EXITT
+NUMQ3 WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD DPL
+      WRD STORE
+      WRD CHARP
+      WRD DPL
+      WRD ATT
+      WRD UELSE
+        WRD NUMQ2
+NUMQ4 WRD TDROP
+      WRD RFROM
+      WRD UIF
+        WRD NUMQ5
+      WRD DNEGA
+NUMQ5 WRD ULIT
+        WRD $FFFF
+      WRD EXITT
+;   HERE	( -- a )
+;		Return the top of the code dictionary.
+
+      WRD L120
+L121  WRD $04
+      TXT "HERE"
+      WRD 0
+HERE  WRD LIST1
+      WRD DP
+      WRD ATT
+      WRD EXITT
+;   PAD		( -- a )
+;		Return the address of a temporary buffer.
+
+      WRD L121
+L122  WRD $03
+      TXT "PAD"
+      WRD 0
+PAD   WRD LIST1
+      WRD HERE
+      WRD ULIT
+        WRD NPAD
+      WRD PLUS
+      WRD EXITT
+;   <#		( -- )
+;		Initiate the numeric output process.
+
+      WRD L122
+L123  WRD $02
+      TXT "<#"
+      WRD 0
+BDIGS WRD LIST1
+      WRD PAD
+      WRD HLD
+      WRD STORE
+      WRD EXITT
+;   DIGIT	( u -- c )
+;		Convert digit u to a character.
+
+      WRD L123
+L124  WRD $05
+      TXT "DIGIT"
+      WRD 0
+DIGIT WRD LIST1
+      WRD ULIT
+        WRD $09
+      WRD OVER
+      WRD LESS
+      WRD ULIT
+        WRD $07
+      WRD ANDD
+      WRD PLUS
+      WRD ULIT
+         WRD 48  ; ASCII '0'
+      WRD PLUS
+      WRD EXITT
+;   HOLD	( c -- )
+;		Insert a character into the numeric output string.
+
+      WRD L124
+L125  WRD $04
+      TXT "HOLD"
+      WRD 0
+HOLD  WRD LIST1
+      WRD HLD
+      WRD ATT
+      WRD CHARM
+      WRD DUP
+      WRD HLD
+      WRD STORE
+      WRD CSTOR
+      WRD EXITT
+;   #		( u -- u )
+;		Extract one digit from u and append the digit to output string.
+
+      WRD L125
+L126  WRD $01
+      TXT "#"
+      WRD 0
+NDIG  WRD LIST1
+      WRD ULIT
+        WRD 0
+      WRD BASE
+      WRD ATT
+      WRD UMMOD
+      WRD TOR
+      WRD BASE
+      WRD ATT
+      WRD UMMOD
+      WRD SWAP
+      WRD DIGIT
+      WRD HOLD
+      WRD RFROM
+      WRD EXITT
+;   #S		( u -- 0 )
+;		Convert u until all digits are added to the output string.
+
+      WRD L126
+L127  WRD $02
+      TXT "#S"
+      WRD 0
+DIGS  WRD LIST1
+DIGS1 WRD NDIG
+      WRD TDUP
+      WRD ORR
+      WRD ZEQ
+      WRD UIF
+        WRD DIGS1
+      WRD EXITT
+;   #>		( w -- b u )
+;		Prepare the output string to be TYPE'd.
+
+      WRD L127
+L128  WRD $02
+      TXT "#>"
+      WRD 0
+EDIGS WRD LIST1
+      WRD TDROP
+      WRD HLD
+      WRD ATT
+      WRD PAD
+      WRD OVER
+      WRD MINUS
+      WRD EXITT
+;   SIGN	( n -- )
+;		Add a minus sign to the numeric output string.
+;
+      WRD L128
+L129  WRD $04
+      TXT "SIGN"
+      WRD 0
+SIGN  WRD LIST1
+      WRD ZLESS
+      WRD UIF
+        WRD SIGN1
+      WRD ULIT
+        TXT "-"
+      WRD HOLD
+SIGN1 WRD EXITT
+;   CATCH	( ca -- 0 | err# )
+;		Execute word at ca and set up an error frame for it.
+
+      WRD L129
+L130  WRD $05
+      TXT "CATCH"
+      WRD 0
+CATCH WRD LIST1
+      WRD SPAT
+      WRD TOR
+      WRD TF
+      WRD ATT
+      WRD TOR
+      WRD RPAT
+      WRD TF
+      WRD STORE
+      WRD EXECU
+      WRD RFROM
+      WRD TF
+      WRD STORE
+      WRD RFROM
+      WRD DROP
+      WRD ULIT
+        WRD 0
+      WRD EXITT
+;   THROW	( err# -- err# )
+;		Reset system to current local error frame an update error flag.
+
+      WRD L130
+L131  WRD $05
+      TXT "THROW"
+      WRD 0
+THROW WRD LIST1
+      WRD QDUP
+      WRD UIF
+        WRD THRO1
+      WRD TF
+      WRD ATT
+      WRD RPSTO
+      WRD RFROM
+      WRD TF
+      WRD STORE
+      WRD RFROM
+      WRD SWAP
+      WRD TOR
+      WRD SPSTO
+      WRD DROP
+      WRD RFROM
+THRO1 WRD EXITT
+;   ABORT	( -- )
+;		Reset data stack and jump to QUIT.
+
+      WRD L131
+L132  WRD $05
+      TXT "ABORT"
+      WRD 0
+ABORT WRD LIST1
+      WRD ULIT
+        WRD -1
+      WRD THROW
+      WRD EXITT
+;   ?KEY	( -- c T | F )
+;		Return input character and true, or a false if no input.
+
+      WRD L132
+L133  WRD $04
+      TXT "?KEY"
+      WRD 0
+QKEY  WRD LIST1
+      WRD PAUS
+      WRD TQKEY
+      WRD ATT
+      WRD EXECU
+      WRD EXITT
+;   KEY		( -- c )
+;		Wait for and return an input character.
+
+      WRD L133
+L134  WRD $03
+      TXT "KEY"
+      WRD 0
+KEY   WRD LIST1
+KEY1  WRD QKEY
+      WRD UIF
+        WRD KEY1
+      WRD EXITT
+;   NUF?	( -- t )
+;		Return false if no input, else pause and if CR return true.
+
+      WRD L134
+L135  WRD $04
+      TXT "NUF?"
+      WRD 0
+NUFQ  WRD LIST1
+      WRD QKEY
+      WRD DUP
+      WRD UIF
+        WRD NUFQ1
+      WRD TDROP
+      WRD KEY
+      WRD ULIT
+        WRD ECR
+      WRD EQUAL
+NUFQ1 WRD EXITT
+;   EMIT	( c -- )
+;		Send a character to the output device.
+
+      WRD L135
+L136  WRD $04
+      TXT "EMIT"
+      WRD 0
+EMIT  WRD LIST1
+      WRD TEMIT
+      WRD ATT
+      WRD EXECU
+      WRD EXITT
+;   SPACE	( -- )
+;		Send the blank character to the output device.
+
+      WRD L136
+L137  WRD $05
+      TXT "SPACE"
+      WRD 0
+SPACE WRD LIST1
+      WRD BLL
+      WRD EMIT
+      WRD EXITT
+;  EMITS ( n c -- )
+;            Send n characters of code c to output device
+      WRD L137
+L138  WRD $05
+      TXT "EMITS"
+      WRD 0
+EMITS WRD LIST1
+      WRD SWAP
+      WRD ULIT
+        WRD 0
+      WRD MAX
+EMTS1 WRD DUP
+      WRD UIF
+        WRD EMTS2
+      WRD OVER
+      WRD EMIT
+      WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD UELSE
+        WRD EMTS1
+EMTS2 WRD TDROP
+      WRD EXITT
+;   SPACES	( +n -- )
+;		Send n spaces to the output device.
+
+      WRD L138
+L139  WRD $06
+      TXT "SPACES"
+      WRD 0
+SPACS WRD LIST1
+      WRD BLL
+      WRD EMITS
+      WRD EXITT
+;   TYPE	( b u -- )
+;		Output u characters from b.
+
+      WRD L139
+L140  WRD $04
+      TXT "TYPE"
+      WRD 0
+TYPE  WRD LIST1
+      WRD BNDS
+TYPE1 WRD TDUP
+      WRD XORR
+      WRD UIF
+        WRD TYPE2
+      WRD COUNT
+      WRD EMIT
+      WRD UELSE
+        WRD TYPE1
+TYPE2 WRD TDROP
+      WRD EXITT
+;   CR		( -- )
+;		Output a carriage return and a line feed.
+
+      WRD L140
+L141  WRD $02
+      TXT "CR"
+      WRD 0
+CR    WRD LIST1
+      WRD ULIT
+        WRD ECR
+      WRD EMIT
+      WRD ULIT
+        WRD ELF
+      WRD EMIT
+      WRD EXITT
+; _" ( -- a )
+;		Return the address of a compiled string.
+
+      WRD L141
+L142  WRD $02
+      WRD $5F
+        WRD $22 ; _"
+      WRD ECOMP
+UQUOT WRD LIST1
+      WRD RFROM
+      WRD RFROM
+      WRD DUP
+      WRD COUNT
+      WRD PLUS
+      WRD TOR
+      WRD SWAP
+      WRD TOR
+      WRD EXITT
+; _S" ( -- a u )
+;		Return the address and byte count of a compiled string.
+
+      WRD L142
+L143  WRD $03
+      WRD $5F
+        WRD $53
+        WRD $22 ; _S"
+      WRD ECOMP
+USQ   WRD LIST1
+      WRD UQUOT
+      WRD COUNT
+      WRD EXITT
+; _." ( -- )
+      WRD L143
+L144  WRD $03
+      WRD $5F
+        WRD $2E
+        WRD $22 ; _."
+      WRD ECOMP
+UDOTQ WRD LIST1
+      WRD UQUOT
+      WRD COUNT
+      WRD TYPE
+      WRD EXITT
+      WRD L144
+;  _ABORT" ( i*n f -- i*n | ) ( R: i*x i*y -- i*x i*y | i*x )
+L145  WRD $07
+      WRD $5F
+        WRD $41
+        WRD $42
+        WRD $4F
+        WRD $52
+        WRD $54
+        WRD $22 ; _ABORT"
+      WRD ECOMP
+UABOR WRD LIST1
+      WRD UIF
+        WRD UABO1
+      WRD UQUOT
+      WRD CSP
+      WRD STORE
+      WRD ULIT
+        WRD -2
+      WRD THROW
+UABO1 WRD UQUOT
+      WRD DROP
+      WRD EXITT
+;		Display a signed integer in a field of n columns, right justified.
+;   S.R		( a u n -- )
+
+      WRD L145
+L146  WRD $03
+      TXT "S.R"
+      WRD 0
+SDOTR WRD LIST1
+      WRD OVER
+      WRD MINUS
+      WRD SPACS
+      WRD TYPE
+      WRD EXITT
+;		Display a double integer in a field of n columns, right justified.
+;   D.R		( d +n -- )
+      WRD L146
+L147  WRD $03
+      TXT "D.R"
+      WRD 0
+DDOTR WRD LIST1
+      WRD TOR
+      WRD DUP
+      WRD TOR
+      WRD DABS
+      WRD BDIGS
+      WRD DIGS
+      WRD RFROM
+      WRD SIGN
+      WRD EDIGS
+      WRD RFROM
+      WRD SDOTR
+      WRD EXITT
+;		Display an integer in a field of n columns, right justified.
+;   U.R		( u +n -- )
+
+      WRD L147
+L148  WRD $03
+      TXT "U.R"
+      WRD 0
+UDOTR WRD LIST1
+      WRD ULIT
+        WRD 0
+      WRD SWAP
+      WRD DDOTR
+      WRD EXITT
+;   .R		( n +n -- )
+;		Display an integer in a field of n columns, right justified.
+
+      WRD L148
+L149  WRD $02
+      TXT ".R"
+      WRD 0
+DOTR  WRD LIST1
+      WRD TOR
+      WRD STOD
+      WRD RFROM
+      WRD DDOTR
+      WRD EXITT
+;  D. ( d -- )
+;              Display double integer in free format
+      WRD L149
+L150  WRD $02
+      TXT "D."
+      WRD 0
+DDOT  WRD LIST1
+      WRD ULIT
+        WRD 0
+      WRD DDOTR
+      WRD SPACE
+      WRD EXITT
+      WRD L150
+;   U.		( u -- )
+;		Display an unsigned integer in free format.
+
+L151  WRD $02
+      TXT "U."
+      WRD 0
+UDOT  WRD LIST1
+      WRD ULIT
+        WRD 0
+      WRD DDOT
+      WRD EXITT
+;   .		( w -- )
+;		Display an integer in free format, preceeded by a space.
+
+      WRD L151
+L152  WRD $01
+      TXT "."
+      WRD 0
+DOT   WRD LIST1
+      WRD BASE
+      WRD ATT
+      WRD ULIT
+        WRD $0A
+      WRD XORR
+      WRD UIF
+        WRD DOT1
+      WRD UDOT
+      WRD EXITT
+DOT1  WRD STOD
+      WRD DDOT
+      WRD EXITT
+;   ?		( a -- )
+;		Display the contents in a memory cell.
+
+      WRD L152
+L153  WRD $01
+      TXT "?"
+      WRD 0
+QUEST WRD LIST1
+      WRD ATT
+      WRD DOT
+      WRD EXITT
+;  PACK ( a1 u a2 -- a2 )
+
+      WRD L153
+L154  WRD $04
+      TXT "PACK"
+      WRD 0
+PACK  WRD LIST1
+      WRD OVER
+      WRD ULIT
+        WRD RESET
+      WRD ULESS
+      WRD UIF
+        WRD PACK1
+      WRD DUP
+      WRD TOR
+      WRD OVER
+      WRD TOR
+      WRD CHARP
+      WRD SWAP
+      WRD MOVE
+      WRD RFROM
+      WRD RAT
+      WRD CSTOR
+      WRD RFROM
+      WRD EXITT
+PACK1 WRD ULIT
+        WRD -18
+      WRD THROW
+      WRD EXITT
+;   DEPTH	( -- n )
+;		Return the depth of the data stack.
+
+      WRD L154
+L155  WRD $05
+      TXT "DEPTH"
+      WRD 0
+DEPTH WRD LIST1
+      WRD SPAT
+      WRD TID
+      WRD ATT
+      WRD CELLP
+      WRD CELLP
+      WRD ATT
+      WRD SWAP
+      WRD MINUS
+      WRD ULIT
+        WRD CELL1
+      WRD SLASH
+      WRD EXITT
+;   ?STACK	( -- )
+;		Abort if the data stack underflows.
+
+      WRD L155
+L156  WRD $06
+      TXT "?STACK"
+      WRD 0
+QSTAC WRD LIST1
+      WRD DEPTH
+      WRD ZLESS
+      WRD UABOR
+      WRD $06
+      TXT "depth?"
+      WRD EXITT
+
+;  ACCEPT ( a u -- u )
+;        accept characters from input buffer
+      WRD L156
+L157  WRD $06
+      TXT "ACCEPT"
+      WRD 0
+ACCEP WRD LIST1
+      WRD OVER
+      WRD PLUS
+      WRD OVER
+ACCE1 WRD KEY
+      WRD DUP
+      WRD ULIT
+        WRD ECR
+      WRD XORR
+      WRD UIF
+        WRD ACCE6
+      WRD DUP
+      WRD ULIT
+        WRD EBS
+      WRD EQUAL
+      WRD UIF
+        WRD ACCE3
+      WRD DROP
+      WRD TOR
+      WRD OVER
+      WRD RAT
+      WRD LESS
+      WRD DUP
+      WRD UIF
+        WRD ACCE2
+      WRD ULIT
+        WRD EBS
+      WRD DUP
+      WRD EMIT
+      WRD BLL
+      WRD EMIT
+      WRD EMIT
+ACCE2 WRD RFROM
+      WRD PLUS
+      WRD UELSE
+        WRD ACCE5
+ACCE3 WRD TOR
+      WRD TDUP
+      WRD XORR
+      WRD UIF
+        WRD ACCE4
+      WRD RAT
+      WRD OVER
+      WRD CSTOR
+      WRD CHARP
+      WRD RAT
+      WRD EMIT
+ACCE4 WRD RFROM
+      WRD DROP
+ACCE5 WRD UELSE
+        WRD ACCE1
+ACCE6 WRD DROP
+      WRD NIP
+      WRD SWAP
+      WRD MINUS
+      WRD EXITT
+;   SAME?	( a a u -- a a f \ -0+ )
+;		Compare u cells in two strings. Return 0 if identical.
+
+      WRD L157
+L158  WRD $05
+      TXT "SAME?"
+      WRD 0
+SAMEQ WRD LIST1
+      WRD SWAP
+      WRD TOR
+SAMQ1 WRD DUP
+      WRD UIF
+        WRD SAMQ2
+      WRD CHARM
+      WRD TDUP
+      WRD PLUS
+      WRD CAT
+      WRD OVER
+      WRD RAT
+      WRD PLUS
+      WRD CAT
+      WRD XORR
+      WRD UIF
+        WRD SAMQ1
+      WRD RFROM
+      WRD DROP
+      WRD TDROP
+      WRD ULIT
+        WRD 0
+      WRD EXITT
+SAMQ2 WRD RFROM
+      WRD DROP
+      WRD TDROP
+      WRD ULIT
+        WRD $FFFF
+      WRD EXITT
+; _DELIMIT ( a u -- a u delta )
+      WRD L158
+L159  WRD $08
+      TXT "_DELIMIT"
+      WRD 0
+UDELI WRD LIST1
+      WRD BNDS
+      WRD DUP
+      WRD TOR
+      WRD CHARM
+UDEL1 WRD CHARP
+      WRD TDUP
+      WRD XORR
+      WRD UIF
+        WRD UDEL5
+      WRD BLL
+      WRD OVER
+      WRD CAT
+      WRD LESS
+      WRD UIF
+        WRD UDEL1
+      WRD SWAP
+      WRD OVER
+UDEL2 WRD CHARP
+      WRD TDUP
+      WRD XORR
+      WRD UIF
+        WRD UDEL3
+      WRD DUP
+      WRD CAT
+      WRD BLL
+      WRD ULIT
+        WRD $01
+      WRD PLUS
+      WRD LESS
+      WRD UIF
+        WRD UDEL2
+      WRD NIP
+      WRD DUP
+      WRD CHARP
+      WRD UELSE
+        WRD UDEL4
+UDEL3 WRD DROP
+      WRD DUP
+UDEL4 WRD TOR
+      WRD OVER
+      WRD MINUS
+      WRD RFROM
+      WRD UELSE
+        WRD UDEL6
+UDEL5 WRD DROP
+      WRD ULIT
+        WRD 0
+      WRD OVER
+UDEL6 WRD RFROM
+      WRD MINUS
+      WRD EXITT
+;   :PARSE	( b u c -- b u delta ; <string> )
+;		Scan string delimited by c. Return found string and its offset.
+
+      WRD L159
+L160  WRD $06
+      TXT "_PARSE"
+      WRD 0
+UPARS WRD LIST1
+      WRD TOR
+      WRD OVER
+      WRD PLUS
+      WRD OVER
+      WRD CHARM
+UPAR1 WRD CHARP
+      WRD TDUP
+      WRD XORR
+      WRD UIF
+        WRD UPAR2
+      WRD DUP
+      WRD CAT
+      WRD RAT
+      WRD EQUAL
+      WRD UIF
+        WRD UPAR1
+      WRD SWAP
+      WRD RFROM
+      WRD TDROP
+      WRD OVER
+      WRD MINUS
+      WRD DUP
+      WRD ULIT
+        WRD $01
+      WRD PLUS
+      WRD EXITT
+UPAR2 WRD SWAP
+      WRD RFROM
+      WRD TDROP
+      WRD OVER
+      WRD MINUS
+      WRD DUP
+      WRD EXITT
+
+      WRD L160
+L161  WRD $05
+      TXT "NAME>"
+      WRD 0
+NAMET WRD LIST1
+      WRD COUNT
+      WRD PLUS
+      WRD CHARP
+      WRD EXITT
+;   NAME>	( na -- ca )
+;		Return a code address given a name address.
+
+      WRD L161
+L162  WRD $04
+      TXT "WID?"
+      WRD 0
+WIDQ  WRD LIST1
+      WRD SWAP
+      WRD TOR
+      WRD ATT
+WIDQ1 WRD DUP
+      WRD UIF
+        WRD WIDQ4
+      WRD COUNT
+      WRD RAT
+      WRD EQUAL
+      WRD UIF
+        WRD WIDQ3
+      WRD TDUP
+      WRD RAT
+      WRD SAMEQ
+      WRD UIF
+        WRD WIDQ2
+      WRD SWAP
+      WRD RFROM
+      WRD TDROP
+      WRD CHARM
+      WRD DUP
+      WRD NAMET
+      WRD SWAP
+      WRD COUNT
+      WRD PLUS
+      WRD CAT
+      WRD ULIT
+        WRD $FFFF
+      WRD EXITT
+WIDQ2:
+WIDQ3 WRD CHARM
+      WRD CELLM
+      WRD ATT
+      WRD UELSE
+        WRD WIDQ1
+WIDQ4 WRD DROP
+      WRD RFROM
+      WRD ULIT
+        WRD 0
+      WRD EXITT
+;   CONTEXT	( -- a )
+;		A area to specify vocabulary search order.
+
+      WRD L162
+L163  WRD $07
+      TXT "CONTEXT"
+      WRD 0
+CONTE WRD LIST1
+      WRD UVAR
+      WRD 0
+      WRD 0
+      WRD 0
+      WRD 0
+      WRD 0
+      WRD 0
+      WRD 0
+      WRD 0
+      WRD 0
+;  SFIND ( a u -- xt lex -1 | a u 0 )
+      WRD L163
+L164  WRD $05
+      TXT "SFIND"
+      WRD 0
+SFIND WRD LIST1
+      WRD CONTE
+      WRD CELLM
+      WRD TOR
+SFIN1 WRD RFROM
+      WRD CELLP
+      WRD DUP
+      WRD TOR
+      WRD ATT
+      WRD DUP
+      WRD UIF
+        WRD SFIN2
+      WRD WIDQ
+      WRD UIF
+        WRD SFIN1
+      WRD ULIT
+        WRD $FFFF
+SFIN2 WRD RFROM
+      WRD DROP
+      WRD EXITT
+; _[ ( a u -- ) 
+;   ( the Forth interpreter )
+      WRD L164
+L165  WRD $02
+      TXT "_["
+      WRD ECOMP
+ULBR  WRD LIST1
+      WRD SFIND
+      WRD UIF
+        WRD ULBR1
+      WRD ULIT
+        WRD ECOMP
+      WRD ANDD
+      WRD UABOR
+      WRD $08
+      TXT "compile?"
+      WRD EXECU
+      WRD QSTAC
+      WRD EXITT
+ULBR1 WRD NUMQ
+      WRD UIF
+        WRD ULBR3
+      WRD DPL
+      WRD ATT
+      WRD ZLESS
+      WRD UIF
+        WRD ULBR2
+      WRD DROP
+ULBR2 WRD EXITT
+ULBR3 WRD ULIT
+        WRD -13
+      WRD THROW
+      WRD EXITT
+;   [		( -- )
+;		Start the text interpreter.
+
+      WRD L165
+L166  WRD $01
+      TXT "["
+      WRD EIMED
+LBRAC WRD LIST1
+      WRD ULIT
+        WRD ULBR
+      WRD ULIT
+        WRD 0
+      WRD STATE
+      WRD TSTOR
+      WRD EXITT
+;   SOURCE ( -- a u )
+;  directly accessing the input buffer 
+      WRD L166
+L167  WRD $06
+      TXT "SOURCE"
+      WRD 0
+SOURC WRD LIST1
+      WRD NIN
+      WRD TAT
+      WRD EXITT
+;  PARSE-WORD ( "ccc" -- a u )
+      WRD L167
+L168  WRD $0A
+      TXT "PARSE-WORD"
+      WRD 0
+PARSW WRD LIST1
+      WRD SOURC
+      WRD TOIN
+      WRD ATT
+      WRD SSTRI
+      WRD UDELI
+      WRD TOIN
+      WRD PLUST
+      WRD EXITT
+; EVALUATE ( a u -- ) 
+; Save the current input source specification. Store minus-one (-1) in SOURCE-ID if it is present. 
+      WRD L168
+L169  WRD $08
+      TXT "EVALUATE"
+      WRD 0
+EVALU WRD LIST1
+      WRD TOIN
+      WRD ATT
+      WRD TOR
+      WRD ULIT
+        WRD 0
+      WRD TOIN
+      WRD STORE
+      WRD SOURC
+      WRD TOR
+      WRD TOR
+      WRD NIN
+      WRD TSTOR
+EVAL1 WRD PARSW
+      WRD DUP
+      WRD UIF
+        WRD EVAL2
+      WRD STATE
+      WRD CELLP
+      WRD ATT
+      WRD EXECU
+      WRD UELSE
+        WRD EVAL1
+EVAL2 WRD TDROP
+      WRD RFROM
+      WRD RFROM
+      WRD NIN
+      WRD TSTOR
+      WRD RFROM
+      WRD TOIN
+      WRD STORE
+      WRD EXITT
+;  'OK 
+;   ( prompt options )
+      WRD L169
+L170  WRD $03
+      TXT "'OK"
+      WRD 0
+TOK   WRD LIST1
+      WRD UVAR
+      WRD NOOP
+;   QUIT	( -- )
+;		Reset return stack pointer and start text interpreter.
+
+      WRD L170
+L171  WRD $04
+      TXT "QUIT"
+      WRD 0
+QUIT  WRD LIST1
+      WRD SUP
+      WRD CELLP
+      WRD ATT
+      WRD RPSTO
+      WRD LBRAC
+QUIT1 WRD ULIT
+        WRD ETIB
+      WRD DUP
+      WRD ULIT
+        WRD NTIB
+      WRD ACCEP
+      WRD SPACE
+      WRD ULIT
+        WRD EVALU
+      WRD CATCH
+      WRD DUP
+      WRD UIF
+        WRD QUIT5
+      WRD DUP
+      WRD ULIT
+        WRD -1
+      WRD XORR
+      WRD UIF
+        WRD QUIT4
+      WRD CR
+      WRD DUP
+      WRD ULIT
+        WRD -2
+      WRD XORR
+      WRD UIF
+        WRD QUIT2
+      WRD SOURC
+      WRD DROP
+      WRD TOIN
+      WRD ATT
+      WRD DTRAI
+      WRD TYPE
+      WRD UDOTQ
+      WRD $03
+      TXT " ?("
+      WRD ULIT
+        WRD 0
+      WRD DOTR
+      WRD UDOTQ
+      WRD $01
+      TXT ")"
+      WRD UELSE
+        WRD QUIT3
+QUIT2 WRD CSP
+      WRD ATT
+      WRD COUNT
+      WRD TYPE
+QUIT3 WRD SPACE
+QUIT4 WRD SUP
+      WRD CELLP
+      WRD CELLP
+      WRD ATT
+      WRD SPSTO
+      WRD QUIT
+QUIT5 WRD CR
+      WRD STATE
+      WRD ATT
+      WRD EQUAL
+      WRD UIF
+        WRD QUIT1
+      WRD TOK
+      WRD ATT
+      WRD EXECU
+      WRD UDOTQ
+      WRD $03
+      TXT "ok "
+      WRD UELSE
+        WRD QUIT1
+; ALIGN ( -- ) 
+;   Align dictionary to cell boundary
+      WRD L171
+L172  WRD $05
+      TXT "ALIGN"
+      WRD EIMED
+ALGNN WRD LIST1
+      WRD EXITT
+;   ALLOT	( n -- )
+;		Allocate n bytes to the code dictionary.
+
+      WRD L172
+L173  WRD $05
+      TXT "ALLOT"
+      WRD 0
+ALLOT WRD LIST1
+      WRD DP
+      WRD PLUST
+      WRD EXITT
+; S, ( a u -- )
+      WRD L173
+L174  WRD $02
+      TXT "S,"
+      WRD 0
+SCOMA WRD LIST1
+      WRD HERE
+      WRD OVER
+      WRD CHARP
+      WRD ALLOT
+      WRD PACK
+      WRD DROP
+      WRD EXITT
+; C, ( char -- )
+; Reserve space for one character in the data space and store char in the space. 
+      WRD L174
+L175  WRD $02
+      TXT "C,"
+      WRD 0
+CCOMA WRD LIST1
+      WRD HERE
+      WRD ULIT
+        WRD CHAR1
+      WRD ALLOT
+      WRD CSTOR
+      WRD EXITT
+;   ,		( w -- )
+;		Compile an integer into the code dictionary.
+
+      WRD L175
+L176  WRD $01
+      TXT ","
+      WRD 0
+COMMA WRD LIST1
+      WRD HERE
+      WRD ULIT
+        WRD CELL1
+      WRD ALLOT
+      WRD STORE
+      WRD EXITT
+;  COMPILE, ( xt -- )
+; Append the execution semantics of the definition represented by xt to the execution semantics of the current definition. 
+      WRD L176
+L177  WRD $08
+      TXT "COMPILE,"
+      WRD 0
+COMPC WRD LIST1
+      WRD COMMA
+      WRD EXITT
+;   LITERAL	( w -- )
+;		Compile tos to code dictionary as an integer literal.
+
+      WRD L177
+L178  WRD $07
+      TXT "LITERAL"
+      WRD EIMED
+LITER WRD LIST1
+      WRD ULIT
+        WRD ULIT
+      WRD COMPC
+      WRD COMMA
+      WRD EXITT
+;   CHAR	( -- c )
+;		Parse next word and return its first character.
+
+      WRD L178
+L179  WRD $04
+      TXT "CHAR"
+      WRD 0
+CHARR WRD LIST1
+      WRD PARSW
+      WRD DROP
+      WRD CAT
+      WRD EXITT
+; CHAR ( "<spaces>name" -- )
+; Skip leading space delimiters. Parse name delimited by a space. Append the run-time semantics given below to the current definition.
+; Run-time: ( -- char )
+; Place char, the value of the first character of name, on the stack. 
+      WRD L179
+L180  WRD $06
+      TXT "[CHAR]"
+      WRD EIMED
+BCHAR WRD LIST1
+      WRD CHARR
+      WRD LITER
+      WRD EXITT
+
+      WRD L180
+L181  WRD $01
+      TXT "'"
+      WRD 0
+TICK  WRD LIST1
+      WRD PARSW
+      WRD SFIND
+      WRD UIF
+        WRD TICK1
+      WRD DROP
+      WRD EXITT
+TICK1 WRD ULIT
+        WRD -13
+      WRD THROW
+      WRD EXITT
+;   '		( -- ca )
+;		Search context vocabularies for the next word in input stream.
+
+      WRD L181
+L182  WRD $03
+      TXT "[']"
+      WRD EIMED
+BTICK WRD LIST1
+      WRD TICK
+      WRD LITER
+      WRD EXITT
+;   PARSE	( c -- b u ; <string> )
+;		Scan input stream and return counted string delimited by c.
+
+      WRD L182
+L183  WRD $05
+      TXT "PARSE"
+      WRD 0
+PARSE WRD LIST1
+      WRD TOR
+      WRD SOURC
+      WRD TOIN
+      WRD ATT
+      WRD SSTRI
+      WRD RFROM
+      WRD UPARS
+      WRD TOIN
+      WRD PLUST
+      WRD EXITT
+;   .(		( -- )
+;		Output following string up to next ) .
+
+      WRD L183
+L184  WRD $02
+      TXT ".("
+      WRD EIMED
+DOTP  WRD LIST1
+      WRD ULIT
+        TXT ")"
+      WRD PARSE
+      WRD TYPE
+      WRD EXITT
+;   (		( -- )
+;		Ignore following string up to next ) . A comment.
+
+      WRD L184
+L185  WRD $01
+      TXT "("
+      WRD EIMED
+PAREN WRD LIST1
+      WRD ULIT
+        TXT ")"
+      WRD PARSE
+      WRD TDROP
+      WRD EXITT
+;   \		( -- )
+;		Ignore following text till the end of line.
+
+      WRD L185
+L186  WRD $01
+      WRD $5C ; "\"
+      WRD EIMED
+BSLSH WRD LIST1
+      WRD SOURC
+      WRD TOIN
+      WRD STORE
+      WRD DROP
+      WRD EXITT
+; SLITERAL  ( c-addr1 u -- )
+; Compilation: Append the run-time semantics given below to the current definition.
+; Run-time: ( -- c-addr2 u ) Return c-addr2 u describing a string consisting of the characters specified by c-addr1 u during compilation. A program shall not alter the returned string.
+
+
+      WRD L186
+L187  WRD $08
+      TXT "SLITERAL"
+      WRD EIMCO
+SLITE WRD LIST1
+      WRD ULIT
+        WRD USQ
+      WRD COMPC
+      WRD SCOMA
+      WRD EXITT
+; ,C"
+;Compilation: ( "ccc<quote>" -- ) Parse ccc delimited by " (double-quote). Append the run-time semantics given below to the current definition.
+; Run-time: ( -- c-addr u ) Return c-addr string consisting of the characters ccc. A program shall not alter the returned string. 
+
+      WRD L187
+L188  WRD $03
+      WRD $2C
+        WRD $43
+        WRD $22 ; comma c quote
+      WRD 0
+CCQ   WRD LIST1
+      WRD ULIT
+        WRD $22
+      WRD PARSE
+      WRD SCOMA
+      WRD EXITT
+
+; ,S"
+;Compilation: ( "ccc<quote>" -- ) Parse ccc delimited by " (double-quote). Append the run-time semantics given below to the current definition.
+; Run-time: ( -- c-addr u ) Return c-addr and u describing a string consisting of the characters ccc. A program shall not alter the returned string. 
+      WRD L188
+L189  WRD $02
+      WRD $53
+        WRD $22 ; S"
+      WRD EIMCO
+SQUOT WRD LIST1
+      WRD ULIT
+        WRD USQ
+      WRD COMPC
+      WRD CCQ
+      WRD EXITT
+;   ."		( -- ; <string> )
+; Parse ccc delimited by " (double-quote). Append the run-time semantics given below to the current definition.
+; Run-time: ( -- )
+
+Display ccc. 
+      WRD L189
+L190  WRD $02
+      WRD $2E
+        WRD $22 ; ."
+      WRD EIMCO
+DOTQ  WRD LIST1
+      WRD ULIT
+        WRD UDOTQ
+      WRD COMPC
+      WRD CCQ
+      WRD EXITT
+;   ABORT"	( -- ; <string> )
+;		Conditional abort with an error message.
+
+      WRD L190
+L191  WRD $06
+      WRD $41
+        WRD $42
+        WRD $4F
+        WRD $52
+        WRD $54
+        WRD $22 ; ABORT"
+      WRD EIMCO
+ABORQ WRD LIST1
+      WRD ULIT
+        WRD UABOR
+      WRD COMPC
+      WRD CCQ
+      WRD EXITT
+;  _] ( a u -- ) 
+;     ( the Forth compiler )
+      WRD L191
+L192  WRD $02
+      TXT "_]"
+      WRD ECOMP
+URBR  WRD LIST1
+      WRD SFIND
+      WRD UIF
+        WRD URBR2
+      WRD ULIT
+        WRD EIMED
+      WRD ANDD
+      WRD UIF
+        WRD URBR1
+      WRD EXECU
+      WRD QSTAC
+      WRD EXITT
+URBR1 WRD COMPC
+      WRD EXITT
+URBR2 WRD NUMQ
+      WRD UIF
+        WRD URBR5
+      WRD DPL
+      WRD ATT
+      WRD ZLESS
+      WRD UIF
+        WRD URBR3
+      WRD DROP
+      WRD UELSE
+        WRD URBR4
+URBR3 WRD SWAP
+      WRD LITER
+URBR4 WRD LITER
+      WRD EXITT
+URBR5 WRD ULIT
+        WRD -13
+      WRD THROW
+      WRD EXITT
+;   ]		( -- )
+;		Start compiling the words in the input stream.
+
+      WRD L192
+L193  WRD $01
+      TXT "]"
+      WRD 0
+RBRAC WRD LIST1
+      WRD ULIT
+        WRD URBR
+      WRD ULIT
+        WRD $FFFF
+      WRD STATE
+      WRD TSTOR
+      WRD EXITT
+; FORTH-WORDLIST ( -- wid )
+      WRD L193
+L194  WRD $0E
+      TXT "FORTH-WORDLIST"
+      WRD 0
+FRTHW WRD LIST1
+      WRD UVAR
+FRTW1 WRD BYE0
+      WRD 0
+      WRD 0
+;   LAST	( -- a )
+;		Point to the last name in the name dictionary.
+
+      WRD L194
+L195  WRD $04
+      TXT "LAST"
+      WRD 0
+LAST  WRD LIST1
+      WRD UVAR
+      WRD 0
+      WRD 0
+ERECU WRD 0
+EDOES WRD 0
+;   CURRENT	( -- a )
+;		Point to the vocabulary to be extended.
+
+      WRD L195
+L196  WRD $07
+      TXT "CURRENT"
+      WRD 0
+CURRE WRD LIST1
+      WRD UVAR
+      WRD FRTW1
+      WRD FRTW1
+; GET-CURRENT ( -- wid )
+;       Return wid, the identifier of the compilation word list. 
+      WRD L196
+L197  WRD $0B
+      TXT "GET-CURRENT"
+      WRD 0
+GETCU WRD LIST1
+      WRD CURRE
+      WRD ATT
+      WRD EXITT
+; SET-CURRENT ( wid -- ) 
+;    Set the compilation word list to the word list identified by wid. 
+      WRD L197
+L198  WRD $0B
+      TXT "SET-CURRENT"
+      WRD 0
+SETCU WRD LIST1
+      WRD CURRE
+      WRD STORE
+      WRD EXITT
+; DEFINITIONS ( -- )
+; Make the compilation word list the same as the first word list in the search order.
+      WRD L198
+L199  WRD $0B
+      TXT "DEFINITIONS"
+      WRD 0
+DEFIN WRD LIST1
+      WRD CONTE
+      WRD ATT
+      WRD SETCU
+      WRD EXITT
+;   ?UNIQUE	( a -- a )
+;		Display a warning message if the word already exists.
+
+      WRD L199
+L200  WRD $07
+      TXT "?UNIQUE"
+      WRD 0
+QUNIQ WRD LIST1
+      WRD TDUP
+      WRD GETCU
+      WRD WIDQ
+      WRD UIF
+        WRD QUNI1
+      WRD TDROP
+      WRD CR
+      WRD UDOTQ
+      WRD $06
+      TXT "reDef "
+      WRD TDUP
+      WRD TYPE
+      WRD EXITT
+QUNI1 WRD TDROP
+      WRD EXITT
+;  HEAD, ( "name" -- ) 
+      WRD L200
+L201  WRD $05
+      TXT "HEAD,"
+      WRD 0
+HEADC WRD LIST1
+      WRD PARSW
+      WRD DUP
+      WRD UIF
+        WRD HEDC1
+      WRD QUNIQ
+      WRD GETCU
+      WRD DUP
+      WRD ATT
+      WRD COMMA
+      WRD HERE
+      WRD LAST
+      WRD TSTOR
+      WRD DUP
+      WRD CCOMA
+      WRD HERE
+      WRD SWAP
+      WRD DUP
+      WRD ALLOT
+      WRD MOVE
+      WRD ULIT
+        WRD 0
+      WRD CCOMA
+      WRD EXITT
+HEDC1 WRD ULIT
+        WRD -16
+      WRD THROW
+      WRD EXITT
+LEXST WRD LIST1
+      WRD LAST
+      WRD ATT
+      WRD COUNT
+      WRD PLUS
+      WRD DUP
+      WRD TOR
+      WRD CAT
+      WRD ORR
+      WRD RFROM
+      WRD CSTOR
+      WRD EXITT
+;   IMMEDIATE	( -- )
+;		Make the last compiled word an immediate word.
+
+      WRD L201
+L202  WRD $09
+      TXT "IMMEDIATE"
+      WRD 0
+IMMED WRD LIST1
+      WRD ULIT
+        WRD EIMED
+      WRD LEXST
+      WRD EXITT
+;   COMPILE-ONLY	( -- )
+;		Make the last compiled word a compile only word.
+
+      WRD L202
+L203  WRD $0C
+      TXT "COMPILE-ONLY"
+      WRD 0
+COMPO WRD LIST1
+      WRD ULIT
+        WRD ECOMP
+      WRD LEXST
+      WRD EXITT
+; REVEAL ( -- )
+      WRD L203
+L204  WRD $06
+      TXT "REVEAL"
+      WRD 0
+REVEA WRD LIST1
+      WRD LAST
+      WRD TAT
+      WRD SWAP
+      WRD STORE
+      WRD LBRAC
+      WRD EXITT
+;   RECURSE	( -- )
+;		Make the current word available for compilation.
+
+      WRD L204
+L205  WRD $07
+      TXT "RECURSE"
+      WRD EIMED
+RECUR WRD LIST1
+      WRD ULIT
+        WRD ERECU
+      WRD ATT
+      WRD COMPC
+      WRD EXITT
+;  POSTPONE ( "<spaces>name" -- )
+; Skip leading space delimiters. Parse name delimited by a space. Find name. Append the compilation semantics of name to the current definition. An ambiguous condition exists if name is not found. 
+      WRD L205
+L206  WRD $08
+      TXT "POSTPONE"
+      WRD EIMED
+POSTP WRD LIST1
+      WRD PARSW
+      WRD SFIND
+      WRD UIF
+        WRD PSTP2
+      WRD ULIT
+        WRD EIMED
+      WRD ANDD
+      WRD UIF
+        WRD PSTP1
+      WRD COMPC
+      WRD EXITT
+PSTP1 WRD LITER
+      WRD ULIT
+        WRD COMPC
+      WRD COMPC
+      WRD EXITT
+PSTP2 WRD ULIT
+        WRD -13
+      WRD THROW
+      WRD EXITT
+;  CODE  ( "<spaces>name" -- )
+;  Skip leading space delimiters. Parse name delimited by a space. Create a definition for name, called a "code definition", with the execution semantics defined below. 
+; name Execution: ( i * x -- j * x )
+; Execute the machine code sequence that was generated following CODE. 
+      WRD L206
+L207  WRD $04
+      TXT "CODE"
+      WRD 0
+CODE  WRD LIST1
+      WRD HEADC
+      WRD HERE
+      WRD CELLP
+      WRD COMMA
+      WRD REVEA
+      WRD EXITT
+; next, ( -- ) 
+;     Generate jump to next
+      WRD L207
+L208  WRD $05
+      TXT "next,"
+      WRD 0
+NEXTC WRD LIST1
+      WRD ULIT
+        WRD JPNX1
+      WRD COMMA
+      WRD EXITT
+; :noname       – xt colon-sys         core-ext       “colon-no-name”
+;   Create anonymous word This leaves the execution token for the word on the stack after the closing ;.
+
+      WRD L208
+L209  WRD $07
+      TXT ":NONAME"
+      WRD 0
+CNONA WRD LIST1
+      WRD HERE
+      WRD DUP
+      WRD ULIT
+        WRD ERECU
+      WRD STORE
+      WRD ULIT
+        WRD LIST1
+      WRD COMMA
+      WRD RBRAC
+      WRD EXITT
+;   :		( -- ; <string> )
+;		Start a new colon definition using next word as its name.
+
+      WRD L209
+L210  WRD $01
+      TXT ":"
+      WRD 0
+COLON WRD LIST1
+      WRD HEADC
+      WRD CNONA
+      WRD DROP
+      WRD EXITT
+;   ;		( -- )
+;		Terminate a colon definition.
+
+      WRD L210
+L211  WRD $01
+      WRD 59     ;   ";"
+      WRD EIMCO
+SEMIC WRD LIST1
+      WRD ULIT
+        WRD EXITT
+      WRD COMPC
+      WRD REVEA
+      WRD EXITT
+      WRD L211
+L212  WRD $06
+      TXT "_DOES>"
+      WRD ECOMP
+UDOES WRD LIST1
+      WRD RFROM
+      WRD ULIT
+        WRD EDOES
+      WRD ATT
+      WRD STORE
+      WRD EXITT
+; DOES>
+;Compilation: ( C: colon-sys1 -- colon-sys2 )
+; Append the run-time semantics below to the current definition. Whether or not the current definition is rendered findable in the dictionary by the compilation of DOES> is implementation defined. Consume colon-sys1 and produce colon-sys2. Append the initiation semantics given below to the current definition.
+;Run-time: ( -- ) ( R: nest-sys1 -- )
+; Replace the execution semantics of the most recent definition, referred to as name, with the name execution semantics given below. Return control to the calling definition specified by nest-sys1. An ambiguous condition exists if name was not defined with CREATE or a user-defined word that calls CREATE.
+; Initiation: ( i*x -- i*x a-addr ) ( R:  -- nest-sys2 )
+; Save implementation-dependent information nest-sys2 about the calling definition. Place name's data field address on the stack. The stack effects i*x represent arguments to name.
+; name Execution: ( i*x -- j*x )
+; Execute the portion of the definition that begins with the initiation semantics appended by the DOES> which modified name. The stack effects i*x and j*x represent arguments to and results from name, respectively. 
+
+      WRD L212
+L213  WRD $05
+      TXT "DOES>"
+      WRD EIMCO
+DOES  WRD LIST1
+      WRD ULIT
+        WRD UDOES
+      WRD COMPC
+      WRD CNONA
+      WRD DROP
+      WRD ULIT
+        WRD RFROM
+      WRD COMPC
+      WRD EXITT
+; CREATE	( "<spaces>name" -- )
+; Skip leading space delimiters. Parse name delimited by a space. Create a definition for name with the execution semantics defined below. If the data-space pointer is not aligned, reserve enough data space to align it. The new data-space pointer defines name's data field. CREATE does not allocate data space in name's data field.
+;	name Execution: ( -- a-addr )
+; a-addr is the address of name's data field. The execution semantics of name may be extended by using DOES>. 
+      WRD L213
+L214  WRD $06
+      TXT "CREATE"
+      WRD 0
+CREAT WRD LIST1
+      WRD ULIT
+        WRD UVAR
+      WRD COLON
+      WRD REVEA
+      WRD HERE
+      WRD ULIT
+        WRD EDOES
+      WRD STORE
+      WRD COMPC
+      WRD EXITT
+;   VARIABLE	( -- ; <string> )
+;		Compile a new variable initialized to 0.
+
+      WRD L214
+L215  WRD $08
+      TXT "VARIABLE"
+      WRD 0
+VARIA WRD LIST1
+      WRD CREAT
+      WRD ULIT
+        WRD 0
+      WRD COMMA
+      WRD EXITT
+;   CONSTANT	( x -- ; <string> )
+;		Compile a new constant.
+
+      WRD L215
+L216  WRD $08
+      TXT "CONSTANT"
+      WRD 0
+CONST WRD LIST1
+      WRD ULIT
+        WRD UCON
+      WRD COLON
+      WRD REVEA
+      WRD COMPC
+      WRD COMMA
+      WRD EXITT
+;   USER	( u -- ; <string> )
+;		Compile a new user variable.
+
+      WRD L216
+L217  WRD $04
+      TXT "USER"
+      WRD 0
+USER  WRD LIST1
+      WRD ULIT
+        WRD UUSR
+      WRD COLON
+      WRD REVEA
+      WRD COMPC
+      WRD COMMA
+      WRD EXITT
+
+      WRD L217
+L218  WRD $03
+      TXT "HAT"
+      WRD 0
+HAT   WRD LIST1
+      WRD CREAT
+      WRD ROT
+      WRD ULIT
+        WRD 8*CELL1
+      WRD PLUS
+      WRD HERE
+      WRD PLUS
+      WRD DUP
+      WRD COMMA
+      WRD PLUS
+      WRD DUP
+      WRD COMMA
+      WRD PLUS
+      WRD DUP
+      WRD COMMA
+      WRD HERE
+      WRD MINUS
+      WRD ALLOT
+      WRD EXITT
+;  WORDLIST	( -- wid )
+;    Create a new empty word list, returning its word list identifier wid.
+      WRD L218
+L219  WRD $08
+      TXT "WORDLIST"
+      WRD 0
+WORDL WRD LIST1
+      WRD HERE
+      WRD ULIT
+        WRD 0
+      WRD COMMA
+      WRD DUP
+      WRD CURRE
+      WRD CELLP
+      WRD DUP
+      WRD ATT
+      WRD COMMA
+      WRD STORE
+      WRD ULIT
+        WRD 0
+      WRD COMMA
+      WRD EXITT
+
+      WRD L219
+L220  WRD $06
+      TXT "ORDER@"
+      WRD 0
+ORDAT WRD LIST1
+      WRD DUP
+      WRD ATT
+      WRD DUP
+      WRD UIF
+        WRD ORDA1
+      WRD TOR
+      WRD CELLP
+      WRD ORDAT
+      WRD RFROM
+      WRD SWAP
+      WRD ULIT
+        WRD $01
+      WRD PLUS
+      WRD EXITT
+ORDA1 WRD NIP
+      WRD EXITT
+; GET-ORDER ( -- widn ... wid1 n )
+;    Returns the number of word lists n in the search order and the word list identifiers widn ... wid1 identifying these word lists. wid1 identifies the word list that is searched first, and widn the word list that is searched last. 
+      WRD L220
+L221  WRD $09
+      TXT "GET-ORDER"
+      WRD 0
+GETOR WRD LIST1
+      WRD CONTE
+      WRD ORDAT
+      WRD EXITT
+; SET-ORDER	( widn ... wid1 n -- )
+; Set the search order to the word lists identified by widn ... wid1. Subsequently, word list wid1 will be searched first, and word list widn searched last. 
+      WRD L221
+L222  WRD $09
+      TXT "SET-ORDER"
+      WRD 0
+SETOR WRD LIST1
+      WRD DUP
+      WRD ULIT
+        WRD -1
+      WRD EQUAL
+      WRD UIF
+        WRD SETO1
+      WRD DROP
+      WRD FRTHW
+      WRD ULIT
+        WRD $01
+SETO1 WRD ULIT
+        WRD NVOCS
+      WRD OVER
+      WRD ULESS
+      WRD UIF
+        WRD SETO2
+      WRD ULIT
+        WRD -46
+      WRD THROW
+SETO2 WRD CONTE
+      WRD SWAP
+SETO3 WRD DUP
+      WRD UIF
+        WRD SETO4
+      WRD TOR
+      WRD SWAP
+      WRD OVER
+      WRD STORE
+      WRD CELLP
+      WRD RFROM
+      WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD UELSE
+        WRD SETO3
+SETO4 WRD SWAP
+      WRD STORE
+      WRD EXITT
+; _MARKER ( -- ) ( R: dfa -- )
+      WRD L222
+L223  WRD $07
+      TXT "_MARKER"
+      WRD ECOMP
+UMARK WRD LIST1
+      WRD RFROM
+      WRD TAT
+      WRD DUP
+      WRD ATT
+      WRD FOLLO
+      WRD STORE
+      WRD DUP
+      WRD CONTE
+UMAR1 WRD TOR
+      WRD CELLP
+      WRD DUP
+      WRD ATT
+      WRD DUP
+      WRD RAT
+      WRD STORE
+      WRD UIF
+        WRD UMAR2
+      WRD RFROM
+      WRD CELLP
+      WRD UELSE
+        WRD UMAR1
+UMAR2 WRD CELLP
+      WRD DUP
+      WRD TAT
+      WRD CURRE
+      WRD TSTOR
+      WRD CELLP
+      WRD DUP
+      WRD ATT
+UMAR3 WRD TOR
+      WRD CELLP
+      WRD DUP
+      WRD ATT
+      WRD RAT
+      WRD STORE
+      WRD RFROM
+      WRD CELLP
+      WRD ATT
+      WRD QDUP
+      WRD ZEQ
+      WRD UIF
+        WRD UMAR3
+      WRD RFROM
+      WRD TDROP
+      WRD DP
+      WRD TSTOR
+      WRD EXITT
+;  MARKER ( "name" -- )
+      WRD L223
+L224  WRD $06
+      TXT "MARKER"
+      WRD 0
+MARKE WRD LIST1
+      WRD DP
+      WRD TAT
+      WRD FOLLO
+      WRD ATT
+      WRD COMMA
+      WRD CONTE
+MARK1 WRD DUP
+      WRD ATT
+      WRD DUP
+      WRD COMMA
+      WRD UIF
+        WRD MARK2
+      WRD CELLP
+      WRD UELSE
+        WRD MARK1
+MARK2 WRD DROP
+      WRD CURRE
+      WRD TAT
+      WRD COMMA
+      WRD DUP
+      WRD COMMA
+MARK3 WRD DUP
+      WRD ATT
+      WRD COMMA
+      WRD CELLP
+      WRD ATT
+      WRD QDUP
+      WRD ZEQ
+      WRD UIF
+        WRD MARK3
+      WRD ULIT
+        WRD UMARK
+      WRD COLON
+      WRD REVEA
+      WRD COMPC
+      WRD COMMA
+      WRD COMMA
+      WRD EXITT
+;   BEGIN	( -- a )
+;		Start an infinite or indefinite loop structure.
+
+      WRD L224
+L225  WRD $05
+      TXT "BEGIN"
+      WRD EIMED
+BEGIN WRD LIST1
+      WRD HERE
+      WRD EXITT
+;   THEN	( A -- )
+;		Terminate a conditional branch structure.
+
+      WRD L225
+L226  WRD $04
+      TXT "THEN"
+      WRD EIMED
+THEN  WRD LIST1
+      WRD BEGIN
+      WRD SWAP
+      WRD STORE
+      WRD EXITT
+; RESOLVE ( a -- )
+      WRD L226
+L227  WRD $07
+      TXT "RESOLVE"
+      WRD 0
+RESOL WRD LIST1
+      WRD COMMA
+      WRD EXITT
+; MARK ( -- a )
+      WRD L227
+L228  WRD $04
+      TXT "MARK"
+      WRD 0
+MARK  WRD LIST1
+      WRD HERE
+      WRD BEGIN
+      WRD RESOL
+      WRD EXITT
+;   IF		( -- A )
+;		Begin a conditional branch structure.
+
+      WRD L228
+L229  WRD $02
+      TXT "IF"
+      WRD EIMED
+IFF   WRD LIST1
+      WRD ULIT
+        WRD UIF
+      WRD COMPC
+      WRD MARK
+      WRD EXITT
+;   AHEAD	( -- A )
+;		Compile a forward branch instruction.
+
+      WRD L229
+L230  WRD $05
+      TXT "AHEAD"
+      WRD EIMED
+AHEAD WRD LIST1
+      WRD ULIT
+        WRD UELSE
+      WRD COMPC
+      WRD MARK
+      WRD EXITT
+;   ELSE	( A -- A )
+;		Start the false clause in an IF-ELSE-THEN structure.
+
+      WRD L230
+L231  WRD $04
+      TXT "ELSE"
+      WRD EIMED
+ELSEE WRD LIST1
+      WRD AHEAD
+      WRD SWAP
+      WRD THEN
+      WRD EXITT
+;   WHILE	( a -- A a )
+;		Conditional branch out of a BEGIN-WHILE-REPEAT loop.
+
+      WRD L231
+L232  WRD $05
+      TXT "WHILE"
+      WRD EIMED
+WHIL  WRD LIST1
+      WRD IFF
+      WRD SWAP
+      WRD EXITT
+;   UNTIL	( a -- )
+;		Terminate a BEGIN-UNTIL indefinite loop structure.
+
+      WRD L232
+L233  WRD $05
+      TXT "UNTIL"
+      WRD EIMED
+UNTL  WRD LIST1
+      WRD ULIT
+        WRD UIF
+      WRD COMPC
+      WRD RESOL
+      WRD EXITT
+;   AGAIN	( a -- )
+;		Terminate a BEGIN-AGAIN infinite loop structure.
+
+      WRD L233
+L234  WRD $05
+      TXT "AGAIN"
+      WRD EIMED
+AGAIN WRD LIST1
+      WRD ULIT
+        WRD UELSE
+      WRD COMPC
+      WRD RESOL
+      WRD EXITT
+;   REPEAT	( A a -- )
+;		Terminate a BEGIN-WHILE-REPEAT indefinite loop.
+
+      WRD L234
+L235  WRD $06
+      TXT "REPEAT"
+      WRD EIMED
+REPEA WRD LIST1
+      WRD AGAIN
+      WRD THEN
+      WRD EXITT
+;   .S		( ... -- ... )
+;		Display the contents of the data stack.
+
+      WRD L235
+L236  WRD $02
+      TXT ".S"
+      WRD 0
+DOTS  WRD LIST1
+      WRD QSTAC
+      WRD DEPTH
+DOTS1 WRD QDUP
+      WRD UIF
+        WRD DOTS2
+      WRD DUP
+      WRD PICK
+      WRD DOT
+      WRD ULIT
+        WRD $01
+      WRD MINUS
+      WRD UELSE
+        WRD DOTS1
+DOTS2 WRD EXITT
+;   !CSP	( -- )
+;		Save stack pointer in CSP for error checking.
+
+      WRD L236
+L237  WRD $04
+      TXT "!CSP"
+      WRD 0
+STCSP WRD LIST1
+      WRD SPAT
+      WRD CSP
+      WRD STORE
+      WRD EXITT
+;   ?CSP	( -- )
+;		Abort if stack pointer differs from that saved in CSP.
+
+      WRD L237
+L238  WRD $04
+      TXT "?CSP"
+      WRD 0
+QCSP  WRD LIST1
+      WRD SPAT
+      WRD CSP
+      WRD ATT
+      WRD XORR
+      WRD UABOR
+      WRD $04
+      TXT "csp?"
+      WRD EXITT
+;   >CHAR	( c -- c )
+;		Filter non-printing characters.
+
+      WRD L238
+L239  WRD $05
+      TXT ">CHAR"
+      WRD 0
+TCHAR WRD LIST1
+      WRD ULIT
+        WRD $7F
+      WRD ANDD
+      WRD DUP
+      WRD ULIT
+        WRD $7F
+      WRD BLL
+      WRD WITHI
+      WRD UIF
+        WRD TCHR1
+      WRD DROP
+      WRD ULIT
+        TXT "_"
+TCHR1 WRD EXITT
+;   _TYPE	( b u -- )
+;		Display a string. Filter non-printing characters.
+
+      WRD L239
+L240  WRD $05
+      TXT "_TYPE"
+      WRD 0
+UTYPE WRD LIST1
+      WRD BNDS
+UTYP1 WRD TDUP
+      WRD XORR
+      WRD UIF
+        WRD UTYP2
+      WRD COUNT
+      WRD TCHAR
+      WRD EMIT
+      WRD UELSE
+        WRD UTYP1
+UTYP2 WRD TDROP
+      WRD EXITT
+;   _DUMP	( a u -- )
+;		Numeric dump range of bytes.
+
+      WRD L240
+L241  WRD $05
+      TXT "_DUMP"
+      WRD 0
+UDUMP WRD LIST1
+      WRD BNDS
+UDMP1 WRD TDUP
+      WRD XORR
+      WRD UIF
+        WRD UDMP2
+      WRD COUNT
+      WRD ULIT
+        WRD $03
+      WRD UDOTR
+      WRD UELSE
+        WRD UDMP1
+UDMP2 WRD TDROP
+      WRD EXITT
+;   DUMP	( a u -- )
+;		Dump u bytes from a, in a formatted manner.
+
+      WRD L241
+L242  WRD $04
+      TXT "DUMP"
+      WRD 0
+DUMP  WRD LIST1
+      WRD BASE
+      WRD ATT
+      WRD TOR
+      WRD HEXX
+      WRD BNDS
+DUMP1 WRD TDUP
+      WRD SWAP
+      WRD ULESS
+      WRD UIF
+        WRD DUMP2
+      WRD CR
+      WRD DUP
+      WRD ULIT
+        WRD 0
+      WRD BDIGS
+      WRD NDIG
+      WRD NDIG
+      WRD NDIG
+      WRD NDIG
+      WRD EDIGS
+      WRD TYPE
+      WRD SPACE
+      WRD ULIT
+        WRD NDUMP
+      WRD TDUP
+      WRD UDUMP
+      WRD SPACE
+      WRD SPACE
+      WRD TDUP
+      WRD UTYPE
+      WRD PLUS
+      WRD NUFQ
+      WRD UIF
+        WRD DUMP1
+DUMP2 WRD TDROP
+      WRD RFROM
+      WRD BASE
+      WRD STORE
+      WRD EXITT
+
+      WRD L242
+L243  WRD $03
+      TXT ".ID"
+      WRD 0
+DOTID WRD LIST1
+      WRD COUNT
+      WRD UTYPE
+      WRD EXITT
+; FORTH WIDWORDS ( a u wid -- a u )
+      WRD L243
+L244  WRD $08
+      TXT "WIDWORDS"
+      WRD 0
+WIDWO WRD LIST1
+      WRD SWAP
+      WRD TOR
+      WRD DUP
+      WRD UIF
+        WRD WIDW4
+      WRD CR
+      WRD DUP
+      WRD UDOTQ
+      WRD $04
+      TXT "wid="
+      WRD UDOT
+      WRD CR
+WIDW1 WRD ATT
+      WRD DUP
+      WRD UIF
+        WRD WIDW3
+      WRD TDUP
+      WRD CHARP
+      WRD RAT
+      WRD SAMEQ
+      WRD UIF
+        WRD WIDW2
+      WRD DUP
+      WRD DOTID
+      WRD SPACE
+WIDW2 WRD CELLM
+      WRD NUFQ
+      WRD UIF
+        WRD WIDW1
+WIDW3:
+WIDW4 WRD DROP
+      WRD RFROM
+      WRD EXITT
+;   WORDS	( -- )
+;		Display the names in the context vocabulary.
+
+      WRD L244
+L245  WRD $05
+      TXT "WORDS"
+      WRD 0
+WORDS WRD LIST1
+      WRD BLL
+      WRD PARSE
+      WRD DUP
+      WRD UIF
+        WRD WRDS3
+      WRD CURRE
+WRDS1 WRD CELLP
+      WRD ATT
+      WRD QDUP
+      WRD UIF
+        WRD WRDS2
+      WRD DUP
+      WRD TOR
+      WRD WIDWO
+      WRD RFROM
+      WRD UELSE
+        WRD WRDS1
+WRDS2 WRD UELSE
+        WRD WRDS4
+WRDS3 WRD CONTE
+      WRD ATT
+      WRD WIDWO
+WRDS4 WRD TDROP
+      WRD EXITT
+; NAMED? ( aa -- na | 0 )
+;   Is name defined
+      WRD L245
+L246  WRD $06
+      TXT "NAMED?"
+      WRD 0
+NAMDQ WRD LIST1
+      WRD CURRE
+NMDQ1 WRD CELLP
+      WRD ATT
+      WRD DUP
+      WRD UIF
+        WRD NMDQ5
+      WRD DUP
+      WRD TOR
+NMDQ2 WRD ATT
+      WRD QDUP
+      WRD UIF
+        WRD NMDQ4
+      WRD TDUP
+      WRD NAMET
+      WRD EQUAL
+      WRD UIF
+        WRD NMDQ3
+      WRD SWAP
+      WRD RFROM
+      WRD TDROP
+      WRD EXITT
+NMDQ3 WRD CELLM
+      WRD UELSE
+        WRD NMDQ2
+NMDQ4 WRD RFROM
+      WRD UELSE
+        WRD NMDQ1
+NMDQ5 WRD NIP
+      WRD EXITT
+; SSEE ( a u -- )
+;   ( simple decompiler )
+      WRD L246
+L247  WRD $04
+      TXT "SSEE"
+      WRD 0
+SSEE  WRD LIST1
+      WRD BNDS
+SSEE1 WRD TDUP
+      WRD XORR
+      WRD UIF
+        WRD SSEE5
+      WRD DUP
+      WRD NAMDQ
+      WRD QDUP
+      WRD UIF
+        WRD SSEE2
+      WRD CR
+      WRD DOTID
+      WRD CR
+SSEE2 WRD SPACE
+      WRD DUP
+      WRD ATT
+      WRD NAMDQ
+      WRD QDUP
+      WRD UIF
+        WRD SSEE3
+      WRD DOTID
+      WRD UELSE
+        WRD SSEE4
+SSEE3 WRD DUP
+      WRD ATT
+      WRD ULIT
+        WRD 0
+      WRD UDOTR
+SSEE4 WRD CELLP
+      WRD NUFQ
+      WRD UIF
+        WRD SSEE1
+SSEE5 WRD TDROP
+      WRD EXITT
+;   SEE		( -- ; <string> )
+;		A simple decompiler.
+      WRD L247
+L248  WRD $03
+      TXT "SEE"
+      WRD 0
+SEE   WRD LIST1
+      WRD TICK
+      WRD ULIT
+        WRD $FFFF
+      WRD SSEE
+      WRD EXITT
+;   COLD	( -- )
+;		The hilevel cold start sequence.
+
+      WRD L248
+L249  WRD $04
+      TXT "COLD"
+      WRD 0
+COLD  WRD LIST1
+      WRD SUP
+      WRD CELLP
+      WRD TAT
+      WRD RPSTO
+      WRD SPSTO
+      WRD SUP
+      WRD ATT
+      WRD CELLM
+      WRD UP
+      WRD STORE
+      WRD STATU
+      WRD FOLLO
+      WRD STORE
+      WRD SUP
+      WRD TID
+      WRD STORE
+      WRD SUP
+      WRD AWAKE
+      WRD ULIT
+        WRD 0
+      WRD STOIO
+      WRD HEXX
+      WRD ULIT
+        WRD -1
+      WRD SETOR
+      WRD DEFIN
+      WRD CR
+      WRD ULIT
+        WRD VERSI
+      WRD COUNT
+      WRD TYPE
+      WRD CR
+      WRD ULIT
+        WRD COPYR
+      WRD COUNT
+      WRD TYPE
+      WRD CR
+      WRD QUIT
+      WRD EXITT
+;   BYE		( -- )
+;		Exit eForth.
+
+      WRD L249
+BYE0:
+L250  WRD $03
+      TXT "BYE"
+      WRD 0
+BYE   WRD VCOLD         ; BYE IS COLD START
+VCOLD LDC R1,1
+      LDC R0,0
+      LOD R5,R5,R15    ; PUT R5 TO POINT TO INITIAL SP
+      WRD SUPSP
+      LOD R2,R2,R5     ; GET VALUE FOR PARAMETER SP
+      LOD R5,R5,R15    ; PUT R5 TO POINT TO INITIAL rP
+      WRD SUPRP
+      LOD R3,R3,R5     ; GET VALUE FOR RETURN SP
+      LOD R9,R9,R15    ; SET R9 TO NEXT1
+      WRD NEXT1
+      LOD R4,R4,R15    ; 
+      WRD STINT
+      ORA R15,R9,R9   ; START INNER INTERPRETER
+STINT WRD COLD           
+HERE0:
