@@ -268,10 +268,13 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 // program koji učitava OS u dio RAM memorije
 void loadOS() {
     FILE* prom = fopen("..\\forthgraph.mem", "rb");
-    if (prom==NULL) {printf("Error"); };
-    fread(memory,1,0x2000,prom);	// od pozicije 0x2000 je ucitan operativni sistem u RAM
-
-    fclose(prom);
+    if (prom==NULL) {
+        printf("Error");
+    }
+    else {
+        fread(memory, 1, 0x20000, prom);	// od pozicije 0x2000 je ucitan operativni sistem u RAM
+        fclose(prom);
+    }
 }
 
 /* The 'main' function of Win32 GUI programs: this is where execution starts */
