@@ -167,27 +167,30 @@ void myassemble (void) {
 
     }
 
-//    printf("-%s-%s-%s-%s-%s-%04X\n",label,opcode,dest,src1,src2,code);
+    printf("-%s-%s-%s-%s-%s-%04X\n",label,opcode,dest,src1,src2,code);
   }
 }
 
-void main(int argc, char *argv[]) {
+int main() {
   int i;
   tabletop=0;
-  if (argc != 3) {
-    fprintf(stderr, "usage: %s input_file output_file\n", argv[0]);
+/*  if (argc != 3) {
+//    fprintf(stderr, "usage: %s input_file output_file\n", argv[0]);
+    fprintf(stderr, "usage: %s input_file output_file\n");
     exit(1);
-  }
+  }*/
   for (pass=1;pass<=2;pass++) {
-    input_file = fopen(argv[1], "r");
+//    input_file = fopen(argv[1], "r");
+    input_file = fopen("..\\demo.asm", "r");
     if (input_file == NULL) {
-      perror(argv[1]);
+      perror("..\\demo.asm");
       exit(1);
     }
     myassemble();
   }
   fclose(input_file);
-  output_file = fopen (argv[2], "wb");
+//  output_file = fopen (argv[2], "wb");
+  output_file = fopen ("demo.mem", "wb");
   fwrite (mem , sizeof(short), pc-startorg, output_file);
   fclose (output_file);
 
@@ -196,5 +199,5 @@ void main(int argc, char *argv[]) {
      fprintf(output_file,"%s %4x \n",labtable[i-1].name, labtable[i-1].val);
   }
   fclose (output_file);
-
+    return 0;
 }

@@ -1,10 +1,24 @@
 #include <windows.h>
 #include <stdio.h>
 #include <time.h>
+#include <wingdi.h>
+#include <fstream>
+#include <algorithm>
+
+static const unsigned int NumberOfKeys = 256U;
+bool previousKeyboardState[NumberOfKeys];
+
 
 unsigned short memory[65536];
 // Ovaj procesor je 16 bitni pa je njegova riječ 16 bita = unsigned short
 // [0,2000] je ROM; >= 2000 je RAM
+bool pritisnutTaster=false;
+//int nizihOsamBitaSrc1;
+FILE* disk;
+char buffer[256];
+int rezimDiska; //0=idle, 1=read, 2=write
+int sektor;
+int x=0,y=0;
 
 unsigned short regs[16];
 char asciikeyboard;
@@ -29,6 +43,15 @@ void reset() {
 // Video memory at 0x8192
 // Nama je video memorija: Tekstualna video memorija, 1 riječ po ASCII znaku, rezolucija 80x25 na adresi 8192 = 0x8192
 
+void iscrtajZnakNaEkranu(HWND hwnd, int znak=0){
+    hdc = GetDC(hwnd);
+    TCHAR text[256];
+    swprintf_s(reinterpret_cast<wchar_t *>(text), 256, L"%c", znak);
+    TextOut(hdc, x, y, text, wcslen(reinterpret_cast<const wchar_t *>(text)));
+    x+=8;
+    pritisnutTaster= true;
+}
+
 /// Funkcija za simulaciju mašinskih instrukcija
 void mloop() {
     unsigned short ir, op, dest, src1, src2, n;
@@ -48,6 +71,23 @@ void mloop() {
         regs[15]++;
         switch (op) {
             case 0x0: // LOD
+                // čitanje sa diska
+                if(regs[src2] == 0xFFFC){ // na ovoj lokaciji je prenos podataka za/sa disk/a
+                    if (rezimDiska == 1){ // ako se sa diska čita
+                        std::ifstream diskFile("disk.dat", std::ios::binary);
+                        diskFile.read(reinterpret_cast<char*>(&buffer),256); // učitavanje 256 bajta u buffer sa diska
+                    }
+                    // učitavanje iz buffera u odredište
+                    for (int i = 0; i < 128; i+=2) {
+                        //todo ovdje se stalno piše jedno preko drugog? da li se ovo trebalo u memoriju zapisati?
+                        if(i==0){ // u dest registar se upisuju samo prva 2 bajta (prva riječ)
+                            regs[dest]=(buffer[i]<<8)+buffer[i+1]; //[0] vecih 8 bita, [1] nizih 8 bita; ...
+                        }
+                    }
+                    rezimDiska=0; // disk prelazi u stanje idle
+                }
+
+
                 if (regs[src2] < 0xFFF0) {
                     regs[dest] = memory[regs[src2]];
                 } else if (regs[src2] == 0xFFF1) {
@@ -100,12 +140,47 @@ void mloop() {
                 regs[dest] = regs[src1] * regs[src2];
                 break;
             case 0x8:  // STO
-			//upis u ROM
-			// uis u RAM 
-			// upis u video memoriju
-			
-			// upis na kontroler diska
-                if (regs[src2] < 0xFFF0) {
+			    //Ako je upis u ROM, ne raditi ništa
+                if (regs[src2] < 2000) break;
+                //Upis u RAM
+                else if (regs[src2] > 2000 && regs[src2]<0xFEFF){ // RAM između 2000 i 65279
+                    regs[dest] = memory[regs[src2]] = regs[src1];
+                }
+			    // upis u video memoriju
+                if (regs[src2] > 8192){
+                    // već je upisnao u memoriju gornjim if-om
+                    videochanged=1;
+                    iscrtajZnakNaEkranu(hwndMain, memory[src2]);
+                }
+			    // upis na kontroler diska
+                if (regs[src2] == 0xFFFE){ // na ovoj lokaciji je komanda za disk
+                    rezimDiska=regs[src1]; // vrijednost src1 registra: 0, 1 i li 2
+                }
+                else if(regs[src2] == 0xFFFD){ // na ovoj lokaciji je izbor sektora
+                    sektor=regs[src1]*256; // izbor sektora diska; jedan sektor je 256 bajta
+                }
+                else if(regs[src2] == 0xFFFC){ // na ovoj lokaciji je prenos podataka
+                    if (rezimDiska == 2){ // komanda write: dopisivanje podataka na disk
+                        std::ofstream diskFile("disk.dat", std::ios::ate | std::ios::binary);
+                        char izlazniBuffer[256];
+                        // todo ovdje vjerovatno ide iz memorije upis
+                        //ako je iz memorije onda se mijenjaju nizih i visih osam bita sa zakomentarisanim linijama
+//                        int pozicija = regs[src1];
+                        for (int i = 0; i < 128; i+=2) {
+//                            char nizihOsamBita = memory[pozicija] & 0x00FF;
+//                            char visihOsamBita = memory[pozicija] & 0xFF00;
+//                            pozicija++;
+                            char nizihOsamBita = regs[src1] & 0x00FF;
+                            char visihOsamBita = regs[src1] & 0xFF00;
+                            izlazniBuffer[i]=visihOsamBita;
+                            izlazniBuffer[i+1]=nizihOsamBita;
+                        }
+                        diskFile.write(reinterpret_cast<char*>(&izlazniBuffer),256); //upis izlaznog buffera na disk
+                    }
+                }
+
+                // stari if
+/*                if (regs[src2] < 0xFFF0) {
                     regs[dest] = memory[regs[src2]] = regs[src1];
                     if (regs[src2] >= 0x8192 && regs[src2] < 0xFB00) {
                         int pos = (regs[src2] - 0x8192) * 16;
@@ -133,7 +208,7 @@ void mloop() {
                 } else if (regs[src2] == 0xFFF2) {
                     regs[dest] = regs[src1];
                     //  printf("%c",regs[src1] );
-                }
+                }*/
                 if (src2 == 15)
                     regs[15]++;
                 break;
@@ -234,7 +309,59 @@ void CreateDIB() {
 
     hBM = (HBITMAP) CreateDIBSection(hdc, (BITMAPINFO *) &bi, DIB_RGB_COLORS, (VOID **) &pBits, 0, 0);
 }
-
+/*Port na adresi 0xFF00 sadrži vrijednosti pritisnutih
+tastera iz najvišeg reda (ESC do F12), svaki taster jedan bit
+Port na adresi 0xFF01 sadrži vrijednosti pritisnutih tastera iz
+drugog reda (akcenti, 1,2,3,4,5,6,7,8,9,0,’,+, backspace)), svaki
+taster jedan bit
+Port na adresi 0xFF02 sadrži vrijednosti pritisnutih tastera iz
+trećeg reda (Tab, q,w,e,r,t do Enter), svaki taster jedan bit
+Port na adresi 0xFF03 sadrži vrijednosti pritisnutih tastera iz
+četvrtog reda (Caps lock, a,s,d, do ž), svaki taster jedan bit
+Port na adresi 0xFF04 sadrži vrijednosti pritisnutih tastera iz
+petog reda (od lijevog do desnog Shift), svaki taster jedan bit
+Port na adresi 0xFF05 sadrži vrijednosti pritisnutih tastera iz
+petog reda (od lijevog do desnog Ctrl), svaki taster jedan bit
+*/
+void postaviBitLokacije(WPARAM wParam){
+    // 1000'0000'0000'0000,...,0000'0000'0000'0001
+    unsigned int maska[16]={0x8000,0x4000,0x2000,0x1000,
+                             0x0800,0x0400,0x0200,0x0100,
+                             0x0080,0x0040,0x0020,0x0010,
+                             0x0008,0x0004,0x0002,0x0001};
+    // nisam mogao naći sve tražene znakove u dokumentaciji
+    int redovi[10][16]={{VK_ESCAPE,VK_F1,VK_F2,VK_F3,VK_F4,VK_F5,VK_F6,VK_F7,VK_F8,VK_F9,VK_F10,VK_F11,VK_F12},
+                        {0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x30},
+                        {VK_TAB,0x51,0x57,0x45,0x52,0x54,0x5a,0x55,0x49,0x4f,0x50,VK_RETURN},
+                        {VK_CAPITAL,0x41, 0x53,0x44,0x46,0x47,0x48,0x49,0x4a,0x4b,0x4c},
+                        {VK_LSHIFT,0x59,0x58,0x43,0x56,0x42,0x4e,0x4d,VK_RSHIFT},
+                        {VK_CONTROL,VK_SPACE}};
+    int kod;
+    int red=0;
+    for (int i = 0; i < 10; ++i) {
+        auto pok=std::find(redovi[i], redovi[i] + 10, wParam); // prolazi kroz redove i traži znak
+        if(pok!=redovi[i] + 10){
+            kod=*pok;
+            break;
+        }
+        red++;
+    }
+    // jedna memorijska lokacija ima 16 bita
+    // jedan bit označava jedno slovo s lijeva na desno
+    if(red==0){
+        memory[0xFF00] &= kod;
+    } else if(red==1){
+        memory[0xFF01] &= kod;
+    }else if(red==2){
+        memory[0xFF02] &= kod;
+    }else if(red==3){
+        memory[0xFF03] &= kod;
+    }else if(red==4){
+        memory[0xFF04] &= kod;
+    }else if(red==5){
+        memory[0xFF05] &= kod;
+    }
+}
 
 /* This is where all the input to the window goes to */
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
@@ -250,6 +377,25 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
         }
         case WM_CHAR: {
             asciikeyboard = wParam;
+
+            // prikaz pritisnutog znaka na ekranu
+//            iscrtajZnakNaEkranu(hwnd,asciikeyboard);
+            break;
+        }
+        case WM_KEYDOWN:{
+            asciikeyboard = wParam; // virtualni kod pritisnutog tastera wParam
+            // postavljanje bita
+            postaviBitLokacije(wParam);
+            break;
+        }
+        case WM_KEYUP:{
+            // vraćanje kodova na 0
+            memory[0xFF00] &= 0x0000;
+            memory[0xFF01] &= 0x0000;
+            memory[0xFF02] &= 0x0000;
+            memory[0xFF03] &= 0x0000;
+            memory[0xFF04] &= 0x0000;
+            memory[0xFF05] &= 0x0000;
             break;
         }
         case WM_PAINT: {
@@ -267,7 +413,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 
 // program koji učitava OS u dio RAM memorije
 void loadOS() {
-    FILE* prom = fopen("..\\forthgraph.mem", "rb");
+    FILE* prom = fopen("..\\cmake-build-debug/demo.mem", "rb");
     if (prom==NULL) {
         printf("Error");
     }
@@ -275,6 +421,12 @@ void loadOS() {
         fread(memory, 1, 0x20000, prom);	// od pozicije 0x2000 je ucitan operativni sistem u RAM
         fclose(prom);
     }
+}
+
+//Works fine.
+bool isKeyDown(int key)
+{
+    return (GetAsyncKeyState(key) & (1 << 16));
 }
 
 /* The 'main' function of Win32 GUI programs: this is where execution starts */
@@ -327,14 +479,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     HANDLE thread = CreateThread(NULL, 0, EmulateCPU, NULL, 0, NULL);
 
     // Nama je zadatak: ROM 2 kiloriječi na adresi 0, demo softver
-    // Trebamo imati program u tom ROMu, koji će sadržaj operativnog sistema prebaciti u određenu zonu RAMa
-    // A aktivnost RAM ili ROM će se birati odgovarajućim upisom na memorijske lokacije
-
-
-    // Ucitava se OS iz ROMa, kako??
-    // ubaciti funckiju loadOS u dio za ROM
     loadOS();
-
 
     reset();
 
@@ -351,3 +496,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     DeallocateGDI();
     return msg.wParam;
 }
+
+
+
+
+
