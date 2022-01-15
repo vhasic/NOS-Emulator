@@ -46,7 +46,7 @@ void reset() {
 void iscrtajZnakNaEkranu(HWND hwnd, int znak=0){
     hdc = GetDC(hwnd);
     TCHAR text[256];
-    swprintf_s(reinterpret_cast<wchar_t *>(text), 256, L"%c", znak);
+    swprintf(reinterpret_cast<wchar_t *>(text), 256, L"%c", znak);
     TextOut(hdc, x, y, text, wcslen(reinterpret_cast<const wchar_t *>(text)));
     x+=8;
     pritisnutTaster= true;
@@ -339,9 +339,10 @@ void postaviBitLokacije(WPARAM wParam){
     int kod;
     int red=0;
     for (int i = 0; i < 10; ++i) {
-        auto pok=std::find(redovi[i], redovi[i] + 10, wParam); // prolazi kroz redove i traži znak
+        auto pok=std::find(redovi[i], redovi[i] + 16, wParam); // prolazi kroz redove i traži znak
         if(pok!=redovi[i] + 10){
-            kod=*pok;
+            int x = std::distance(redovi[i], std::find(redovi[i], redovi[i]+16, *pok));
+            kod=maska[x];
             break;
         }
         red++;
@@ -389,6 +390,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
             break;
         }
         case WM_KEYUP:{
+            // ako se želi samo jedinica vratiti na 0, a da nule pređu u jedan uraditi xor sa 0xFFFF
             // vraćanje kodova na 0
             memory[0xFF00] &= 0x0000;
             memory[0xFF01] &= 0x0000;
