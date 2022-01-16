@@ -1,4 +1,3 @@
-C:/Users/Vahidin/CLionProjects/Emulator-NOS-Sveu16/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-C:/Users/Vahidin/CLionProjects/Emulator-NOS-Sveu16/cmake-build-debug/CMakeFiles/sveu16.dir
-C:/Users/Vahidin/CLionProjects/Emulator-NOS-Sveu16/cmake-build-debug/CMakeFiles/asem.dir
-C:/Users/Vahidin/CLionProjects/Emulator-NOS-Sveu16/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/Aya/Documents/GitHub/NOS-Emulator/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+C:/Users/Aya/Documents/GitHub/NOS-Emulator/cmake-build-debug/CMakeFiles/sveu16.dir
+C:/Users/Aya/Documents/GitHub/NOS-Emulator/cmake-build-debug/CMakeFiles/edit_cache.dir

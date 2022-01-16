@@ -1,4 +1,4 @@
-C:\Users\Vahidin\AppData\Local\JetBrains\Toolbox\apps\CLion\ch-0\213.5744.254\bin\cmake\win\bin\cmake.exe -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - MinGW Makefiles" C:\Users\Vahidin\CLionProjects\Emulator-NOS-Sveu16
+"C:\Program Files\JetBrains\CLion 2021.2.2\bin\cmake\win\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - MinGW Makefiles" C:\Users\Aya\Documents\GitHub\NOS-Emulator
 -- Configuring done
 -- Generating done
--- Build files have been written to: C:/Users/Vahidin/CLionProjects/Emulator-NOS-Sveu16/cmake-build-debug
+-- Build files have been written to: C:/Users/Aya/Documents/GitHub/NOS-Emulator/cmake-build-debug

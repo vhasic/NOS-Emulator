@@ -3,6 +3,18 @@ WRD 8192
 LOD R2,R15,R15
 WRD 72//0x48 //72 //H
 STO R2,R2,R1 // mem[8192]=72 trebalo bi se ispisati H na ekranu
+LOD R2,R15,R15
+WRD 69//0x48 //69 //E
+STO R2,R2,R1
+LOD R2,R15,R15
+WRD 76//0x48 //76 //L
+STO R2,R2,R1
+LOD R2,R15,R15
+WRD 76//0x48 //76 //L
+STO R2,R2,R1
+LOD R2,R15,R15
+WRD 79//0x48 //79 //O
+STO R2,R2,R1
 // Upisivanje vrijednosti na disk kontroler
 LOD R3, R15, R15
 WRD 65534 //0xFFFE // Ucitavanje pozicije disk kontrolera za izbor komande u R3

@@ -1,0 +1,3 @@
+"C:\Program Files\JetBrains\CLion 2021.2.2\bin\cmake\win\bin\cmake.exe" -E rm -f CMakeFiles\asem.dir/objects.a
+C:\MinGW\bin\ar.exe cr CMakeFiles\asem.dir/objects.a @CMakeFiles\asem.dir\objects1.rsp
+C:\MinGW\bin\gcc.exe -g -Wl,--whole-archive CMakeFiles\asem.dir/objects.a -Wl,--no-whole-archive -o asem.exe -Wl,--out-implib,libasem.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\asem.dir\linklibs.rsp

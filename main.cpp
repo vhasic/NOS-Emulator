@@ -10,7 +10,6 @@
 static const unsigned int NumberOfKeys = 256U;
 bool previousKeyboardState[NumberOfKeys];
 
-
 unsigned short memory[65536];
 // Ovaj procesor je 16 bitni pa je njegova riječ 16 bita = unsigned short
 // [0,2000] je ROM; >= 2000 je RAM
@@ -90,7 +89,7 @@ void mloop() {
                 // čitanje sa diska
                 if(regs[src2] == 0xFFFC){ // na ovoj lokaciji je prenos podataka za/sa disk/a
                     if (rezimDiska == 1){ // ako se sa diska čita
-                        std::ifstream diskFile("disk.dat", std::ios::binary);
+                        std::ifstream diskFile("disk.bin", std::ios::binary);
                         diskFile.seekg(sektor, std::ios::beg); // čitanje od pozicije na koju pokazuje sektor
                         diskFile.read(reinterpret_cast<char*>(&buffer),256); // učitavanje 256 bajta u buffer sa diska iz određenog sektora
                     }
@@ -182,7 +181,7 @@ void mloop() {
                 }
                 else if(regs[src2] == 0xFFFC){ // na ovoj lokaciji je prenos podataka
                     if (rezimDiska == 2){ // komanda write: dopisivanje podataka na disk
-                        std::ofstream diskFile("disk.dat", std::ios::ate | std::ios::binary);
+                        std::ofstream diskFile("disk.bin", std::ios::ate | std::ios::binary);
                         char izlazniBuffer[256];
                         // todo ovdje vjerovatno ide iz memorije upis
                         //ako je iz memorije onda se mijenjaju nizih i visih osam bita sa zakomentarisanim linijama
@@ -260,7 +259,7 @@ DWORD WINAPI EmulateCPU(void *arg) {
     while (TRUE) {
         t1 = clock();
         t2 = t1 + delayadjust;
-        cyclecount = loopcount;
+        cyclecount = 20;
         mloop();
         if (videochanged) {
             DisplayDIB(hwndMain, hdc);
@@ -268,6 +267,7 @@ DWORD WINAPI EmulateCPU(void *arg) {
             videochanged = 0;
         }
 #ifdef LOWFREQ
+        return 0;
         t3 = clock();
         if (t3 < t2)
             Sleep((t2 - t3) * CLOCKS_PER_SEC / 1000);
@@ -413,7 +413,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 // program koji učitava OS u dio RAM memorije
 void loadOS() {
     FILE* prom = fopen("..\\cmake-build-debug/demo.mem", "rb");
-//    FILE* prom = fopen("..\\forthgraph.mem", "rb");
     if (prom == nullptr) {
         printf("Error");
     }
@@ -475,7 +474,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     SetWindowPos(hwndMain, 0, xPos, yPos, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
 
     UpdateWindow(hwndMain);
-    CreateDIB();
+    //CreateDIB();
     HANDLE thread = CreateThread(NULL, 0, EmulateCPU, NULL, 0, NULL);
 
     // Nama je zadatak: ROM 2 kiloriječi na adresi 0, demo softver
