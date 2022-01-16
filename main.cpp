@@ -20,7 +20,7 @@ FILE* disk;
 char buffer[256];
 int rezimDiska; //0=idle, 1=read, 2=write
 int sektor;
-int x=0,y=0;
+int x=8,y=8;
 
 unsigned short regs[16];
 char asciikeyboard;
@@ -51,6 +51,10 @@ void iscrtajZnakNaEkranu(HWND hwnd, int znak=0){
     snwprintf(reinterpret_cast<wchar_t *>(text), 256, L"%c", znak);
     TextOut(hdc, x, y, text, wcslen(reinterpret_cast<const wchar_t *>(text)));
     x+=8;
+    if(x>650){
+        x=8;
+        y+=16;
+    }
     pritisnutTaster= true;
 }
 
@@ -80,7 +84,7 @@ void mloop() {
                         diskFile.read(reinterpret_cast<char*>(&buffer),256); // učitavanje 256 bajta u buffer sa diska
                     }
                     // učitavanje iz buffera u odredište
-                    for (int i = 0; i < 128; i+=2) {
+                    for (int i = 0; i < 256; i+=2) {
                         //todo ovdje se stalno piše jedno preko drugog? da li se ovo trebalo u memoriju zapisati?
                         if(i==0){ // u dest registar se upisuju samo prva 2 bajta (prva riječ)
                             regs[dest]=(buffer[i]<<8)+buffer[i+1]; //[0] vecih 8 bita, [1] nizih 8 bita; ...
@@ -168,7 +172,7 @@ void mloop() {
                         // todo ovdje vjerovatno ide iz memorije upis
                         //ako je iz memorije onda se mijenjaju nizih i visih osam bita sa zakomentarisanim linijama
 //                        int pozicija = regs[src1];
-                        for (int i = 0; i < 128; i+=2) {
+                        for (int i = 0; i < 256; i+=2) {
 //                            char nizihOsamBita = memory[pozicija] & 0x00FF;
 //                            char visihOsamBita = memory[pozicija] & 0xFF00;
 //                            pozicija++;
@@ -178,6 +182,7 @@ void mloop() {
                             izlazniBuffer[i+1]=nizihOsamBita;
                         }
                         diskFile.write(reinterpret_cast<char*>(&izlazniBuffer),256); //upis izlaznog buffera na disk
+                        rezimDiska=0; // disk prelazi u stanje idle
                     }
                 }
 
@@ -385,7 +390,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
             asciikeyboard = wParam;
 
             // prikaz pritisnutog znaka na ekranu
-//            iscrtajZnakNaEkranu(hwnd,asciikeyboard);
+            iscrtajZnakNaEkranu(hwnd,asciikeyboard);
             break;
         }
         case WM_KEYDOWN:{
