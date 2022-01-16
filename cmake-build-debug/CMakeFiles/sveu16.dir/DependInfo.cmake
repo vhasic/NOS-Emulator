@@ -4,20 +4,11 @@ set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
 
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
-  "C"
-  )
-# The set of files for implicit dependencies of each language:
-set(CMAKE_DEPENDS_CHECK_C
-  "C:/Users/Aya/Documents/GitHub/NOS-Emulator/asem.c" "C:/Users/Aya/Documents/GitHub/NOS-Emulator/cmake-build-debug/CMakeFiles/sveu16.dir/asem.c.obj"
-  )
-set(CMAKE_C_COMPILER_ID "GNU")
-
-# The include file search paths:
-set(CMAKE_C_TARGET_INCLUDE_PATH
   )
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "C:/Users/Vahidin/CLionProjects/Emulator-NOS-Sveu16/main.cpp" "CMakeFiles/sveu16.dir/main.cpp.obj" "gcc" "CMakeFiles/sveu16.dir/main.cpp.obj.d"
   )
 
 # Targets to which this target links.

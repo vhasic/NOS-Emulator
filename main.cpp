@@ -18,8 +18,8 @@ bool pritisnutTaster=false;
 //int nizihOsamBitaSrc1;
 FILE* disk;
 char buffer[256];
-int rezimDiska; //0=idle, 1=read, 2=write
-int sektor;
+int rezimDiska=0; //0=idle, 1=read, 2=write
+int sektor=0;
 int x=8,y=8;
 
 unsigned short regs[16];
@@ -58,6 +58,16 @@ void iscrtajZnakNaEkranu(HWND hwnd, int znak=0){
     pritisnutTaster= true;
 }
 
+char znakoviZaIscrtavanje[1000]={};
+int brojacZnakova=0;
+void prikaziSveZnakoveNaEkranu(HWND hwnd){
+    for (int i = 0; i < brojacZnakova; ++i) {
+        iscrtajZnakNaEkranu(hwnd,znakoviZaIscrtavanje[i]);
+        znakoviZaIscrtavanje[i]=0;
+    }
+    brojacZnakova=0;
+}
+
 /// Funkcija za simulaciju mašinskih instrukcija
 void mloop() {
     unsigned short ir, op, dest, src1, src2, n;
@@ -81,7 +91,8 @@ void mloop() {
                 if(regs[src2] == 0xFFFC){ // na ovoj lokaciji je prenos podataka za/sa disk/a
                     if (rezimDiska == 1){ // ako se sa diska čita
                         std::ifstream diskFile("disk.dat", std::ios::binary);
-                        diskFile.read(reinterpret_cast<char*>(&buffer),256); // učitavanje 256 bajta u buffer sa diska
+                        diskFile.seekg(sektor, std::ios::beg); // čitanje od pozicije na koju pokazuje sektor
+                        diskFile.read(reinterpret_cast<char*>(&buffer),256); // učitavanje 256 bajta u buffer sa diska iz određenog sektora
                     }
                     // učitavanje iz buffera u odredište
                     for (int i = 0; i < 256; i+=2) {
@@ -149,14 +160,18 @@ void mloop() {
 			    //Ako je upis u ROM, ne raditi ništa
                 if (regs[src2] < 2000) break;
                 //Upis u RAM
-                else if (regs[src2] > 2000 && regs[src2]<0xFEFF){ // RAM između 2000 i 65279
+                else if (regs[src2] > 2000 && regs[src2]<0xFFFF){ // RAM između 2000 i 65535
                     regs[dest] = memory[regs[src2]] = regs[src1];
                 }
 			    // upis u video memoriju
-                if (regs[src2] > 8192){
+                if (regs[src2] == 8192){
                     // već je upisano u memoriju gornjim if-om
                     videochanged=1;
-                    iscrtajZnakNaEkranu(hwndMain, memory[src2]);
+
+                    znakoviZaIscrtavanje[brojacZnakova]=regs[src1];
+                    brojacZnakova++;
+
+//                    iscrtajZnakNaEkranu(hwndMain, memory[regs[src2]]);
                 }
 			    // upis na kontroler diska
                 if (regs[src2] == 0xFFFE){ // na ovoj lokaciji je komanda za disk
@@ -181,41 +196,12 @@ void mloop() {
                             izlazniBuffer[i]=visihOsamBita;
                             izlazniBuffer[i+1]=nizihOsamBita;
                         }
-                        diskFile.write(reinterpret_cast<char*>(&izlazniBuffer),256); //upis izlaznog buffera na disk
+                        diskFile.seekp(sektor, std::ios::beg); // upisivanje od pozicije na koju pokazuje sektor
+                        diskFile.write(reinterpret_cast<char*>(&izlazniBuffer),256); //upis izlaznog buffera na disk u određeni sektor
                         rezimDiska=0; // disk prelazi u stanje idle
                     }
                 }
 
-                // stari if
-/*                if (regs[src2] < 0xFFF0) {
-                    regs[dest] = memory[regs[src2]] = regs[src1];
-                    if (regs[src2] >= 0x8192 && regs[src2] < 0xFB00) {
-                        int pos = (regs[src2] - 0x8192) * 16;
-                        unsigned short val = regs[src1];
-
-                        *(pBits + pos) = (val & 0x8000) ? 1 : 0;
-                        *(pBits + pos + 1) = (val & 0x4000) ? 1 : 0;
-                        *(pBits + pos + 2) = (val & 0x2000) ? 1 : 0;
-                        *(pBits + pos + 3) = (val & 0x1000) ? 1 : 0;
-                        *(pBits + pos + 4) = (val & 0x0800) ? 1 : 0;
-                        *(pBits + pos + 5) = (val & 0x0400) ? 1 : 0;
-                        *(pBits + pos + 6) = (val & 0x0200) ? 1 : 0;
-                        *(pBits + pos + 7) = (val & 0x0100) ? 1 : 0;
-                        *(pBits + pos + 8) = (val & 0x0080) ? 1 : 0;
-                        *(pBits + pos + 9) = (val & 0x0040) ? 1 : 0;
-                        *(pBits + pos + 10) = (val & 0x0020) ? 1 : 0;
-                        *(pBits + pos + 11) = (val & 0x0010) ? 1 : 0;
-                        *(pBits + pos + 12) = (val & 0x0008) ? 1 : 0;
-                        *(pBits + pos + 13) = (val & 0x0004) ? 1 : 0;
-                        *(pBits + pos + 14) = (val & 0x0002) ? 1 : 0;
-                        *(pBits + pos + 15) = (val & 0x0001) ? 1 : 0;
-                        videochanged = 1;
-
-                    }
-                } else if (regs[src2] == 0xFFF2) {
-                    regs[dest] = regs[src1];
-                    //  printf("%c",regs[src1] );
-                }*/
                 if (src2 == 15)
                     regs[15]++;
                 break;
@@ -278,6 +264,7 @@ DWORD WINAPI EmulateCPU(void *arg) {
         mloop();
         if (videochanged) {
             DisplayDIB(hwndMain, hdc);
+            prikaziSveZnakoveNaEkranu(hwndMain);
             videochanged = 0;
         }
 #ifdef LOWFREQ
@@ -426,12 +413,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 // program koji učitava OS u dio RAM memorije
 void loadOS() {
     FILE* prom = fopen("..\\cmake-build-debug/demo.mem", "rb");
-    //FILE* prom = fopen("..\\forthgraph.mem", "rb");
+//    FILE* prom = fopen("..\\forthgraph.mem", "rb");
     if (prom == nullptr) {
         printf("Error");
     }
     else {
-        fread(memory, 1, 0x20000, prom);	// od pozicije 0x2000 je ucitan operativni sistem u RAM
+        fread(memory, 1, 0x20000, prom);
         fclose(prom);
     }
 }
