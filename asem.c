@@ -174,19 +174,19 @@ int main() {
   int i;
   tabletop=0;
   for (pass=1;pass<=2;pass++) {
-    input_file = fopen("..\\demo.asm", "r");
+    input_file = fopen("..\\demo2.asm", "r");
     if (input_file == NULL) {
-      perror("..\\demo.asm");
+      perror("..\\demo2.asm");
       exit(1);
     }
     myassemble();
   }
   fclose(input_file);
-  output_file = fopen ("demo.mem", "wb");
+  output_file = fopen ("demo2.mem", "wb");
   fwrite (mem , sizeof(short), pc-startorg, output_file);
   fclose (output_file);
 
-  output_file = fopen ("table.txt", "wb");
+  output_file = fopen ("table2.txt", "wb");
   for (i=tabletop;i>0;i--) {
      fprintf(output_file,"%s %4x \n",labtable[i-1].name, labtable[i-1].val);
   }

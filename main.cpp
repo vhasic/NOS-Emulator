@@ -42,7 +42,8 @@ void reset() {
 }
 
 // Video memory at 0x8192
-// Nama je video memorija: Tekstualna video memorija, 1 riječ po ASCII znaku, rezolucija 80x25 na adresi 8192 = 0x8192
+// Nama je video memorija: Tekstualna video memorija, 1 riječ po ASCII znaku,
+// rezolucija 80x25 na adresi 8192 = 0x8192
 
 void iscrtajZnakNaEkranu(HWND hwnd, int znak=0){
     hdc = GetDC(hwnd);
@@ -306,6 +307,7 @@ void CreateDIB() {
 
     hBM = (HBITMAP) CreateDIBSection(hdc, (BITMAPINFO *) &bi, DIB_RGB_COLORS, (VOID **) &pBits, 0, 0);
 }
+
 /*Port na adresi 0xFF00 sadrži vrijednosti pritisnutih
 tastera iz najvišeg reda (ESC do F12), svaki taster jedan bit
 Port na adresi 0xFF01 sadrži vrijednosti pritisnutih tastera iz
@@ -412,7 +414,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 
 // program koji učitava OS u dio RAM memorije
 void loadOS() {
-    FILE* prom = fopen("..\\cmake-build-debug/demo.mem", "rb");
+    FILE* prom = fopen("..\\cmake-build-debug/demo2.mem", "rb");
     if (prom == nullptr) {
         printf("Error");
     }
