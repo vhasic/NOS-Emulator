@@ -1,0 +1,3 @@
+C:/Users/Aya/Documents/GitHub/NOS-Emulator/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+C:/Users/Aya/Documents/GitHub/NOS-Emulator/cmake-build-debug/CMakeFiles/sveu16.dir
+C:/Users/Aya/Documents/GitHub/NOS-Emulator/cmake-build-debug/CMakeFiles/edit_cache.dir

@@ -123,7 +123,6 @@ void myassemble (void) {
        }
        else
           labtable[tabletop].val=pc;
-//       printf("Added %s=%d\n",labtable[tabletop].name,labtable[tabletop].val);
        tabletop++;
     }
     if (op==-1 || op== 19) {
@@ -174,13 +173,7 @@ void myassemble (void) {
 int main() {
   int i;
   tabletop=0;
-/*  if (argc != 3) {
-//    fprintf(stderr, "usage: %s input_file output_file\n", argv[0]);
-    fprintf(stderr, "usage: %s input_file output_file\n");
-    exit(1);
-  }*/
   for (pass=1;pass<=2;pass++) {
-//    input_file = fopen(argv[1], "r");
     input_file = fopen("..\\demo.asm", "r");
     if (input_file == NULL) {
       perror("..\\demo.asm");
@@ -189,7 +182,6 @@ int main() {
     myassemble();
   }
   fclose(input_file);
-//  output_file = fopen (argv[2], "wb");
   output_file = fopen ("demo.mem", "wb");
   fwrite (mem , sizeof(short), pc-startorg, output_file);
   fclose (output_file);

@@ -4,5 +4,5 @@ project(sveu16)
 
 set(CMAKE_CXX_STANDARD 20)
 
-#add_executable(sveu16 main.cpp asem.c)
-add_executable(sveu16 main.cpp)
+add_executable(sveu16 asem.c)
+#add_executable(sveu16 main.cpp)

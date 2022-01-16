@@ -54,7 +54,8 @@ DRAWCHAR:
 TESTCR:  
   LOD R11,R11,R15
   WRD TESTLF
-  LDC R4,13
+  LOD R4,R15,R15
+  WRD 13
   EQU R7,R4,R5 
   ADD R15,R15,R7  
   ORA R15,R11,R11
@@ -69,7 +70,8 @@ DOCR:
 TESTLF:  
   LOD R11,R11,R15
   WRD TESTBS
-  LDC R4,10
+  LOD R4,R15,R15
+  WRD 10
   EQU R7,R4,R5 
   ADD R15,R15,R7  
   ORA R15,R11,R11
@@ -81,7 +83,8 @@ DOLF:
 TESTBS:  
   LOD R11,R11,R15
   WRD PRINTABLECH
-  LDC R4,8
+  LOD R4,R15,R15
+  WRD 8
   EQU R7,R4,R5 
   ADD R15,R15,R7  
   ORA R15,R11,R11
@@ -95,7 +98,8 @@ DOBS:
   GTU R7,R6,R0
   ADD R7,R7,R7    ; x2
   ADD R15,R15,R7
-  LDC R6,80
+  LOD R6,R15,R15
+  WRD 80
   SUB R9,R9,R1
   SUB R6,R6,R1
   STO R9,R9,R8
@@ -121,9 +125,11 @@ PRINTABLECH:
   WRD 320
   MUL R8,R8,R2     ; X320
   AND R11,R7,R1       
-  LDC R0,$38
+  LOD R0,R15,R15
+  WRD $38
   ADD R15,R15,R11
-  LDC R0,0      ; HALF
+  LOD R0,R15,R15
+  WRD 0      ; HALF
   SHR R7,R7,R1
   ADD R8,R8,R7
 
@@ -139,13 +145,16 @@ PRINTABLECH:
   LOD R6,R6,R15  ; VIDEO ADDRESS
   WRD $B000
   ADD R6,R6,R8
-  LDC R8,$38  ; rotate 8 times const
+  LOD R8,R15,R15
+  WRD $38  ; rotate 8 times const
   LOD R12,R12,R15  ; Font mask
   WRD $FF00 ;    WRD FF00  OR 00FF
   LOD R9,R15,R15 ; REM POS
   WRD LOOP
-  LDC R2,0
-  LDC R4,9
+  LOD R2,R15,R15
+  WRD 0
+  LOD R4,R15,R15
+  WRD 9
 LOOP:
   LOD R11,R11,R5   ; FONT LINE 
   AND R11,R11,R12  ; AND MASK
@@ -156,7 +165,8 @@ LOOP:
   STO R10,R10,R6   ; STORE
   SHR R12,R12,R8   ; FLIP FONT MASK
   XOR R0,R0,R8     ; SWAP FLIPPER
-  LDC R7,$28       ; NEWLINE
+  LOD R7,R15,R15
+  WRD $28       ; NEWLINE
   ADD R6,R6,R7     ; NEXT LINE IN VIDEO
   ADD R5,R5,R2    ; NEXT FONT WORD
   SUB R2,R1,R2   ; FLIP FONT SKIP
@@ -174,7 +184,8 @@ NEXTCOL
 
   LOD R5,R5,R12
   ADD R5,R5,R1
-  LDC R4,80
+  LOD R4,R15,R15
+  WRD 80
   LTU R6,R5,R4
   ADD R15,R15,R6
   ORA R15,R11,R11
@@ -208,7 +219,8 @@ LINEFEED:
   LOD R5,R5,R12
   ADD R5,R5,R1
   STO R5,R5,R12  
-  LDC R4,59
+  LOD R4,R15,R15
+  WRD 59
   GTU R7,R5,R4
   ADD R15,R15,R7
   ORA R15,R11,R11
@@ -1871,7 +1883,8 @@ L026  WRD $02
       WRD 0
 ZLESS WRD ZLES1
 ZLES1 LOD R5,R5,R2     ; GET PARAMETER STACK TOP
-      LDC R6,15        ; ARITHMETIC SHIFT RIGHT 15 TIMES
+      LOD R6,R15,R15
+      WRD 15        ; ARITHMETIC SHIFT RIGHT 15 TIMES
       SHR R5,R5,R6
       STO R5,R5,R2
       ORA R15,R9,R9  ; JUMP NEXT1
@@ -4982,7 +4995,7 @@ NEXTC WRD LIST1
         WRD JPNX1
       WRD COMMA
       WRD EXITT
-; :noname       – xt colon-sys         core-ext       “colon-no-name”
+; :noname       ï¿½ xt colon-sys         core-ext       ï¿½colon-no-nameï¿½
 ;   Create anonymous word This leaves the execution token for the word on the stack after the closing ;.
 
       WRD L208
@@ -5854,8 +5867,10 @@ L250  WRD $03
       TXT "BYE"
       WRD 0
 BYE   WRD VCOLD         ; BYE IS COLD START
-VCOLD LDC R1,1
-      LDC R0,0
+VCOLD LOD R1,R15,R15
+      WRD 1
+      LOD R0,R15,R15
+      WRD 0
       LOD R5,R5,R15    ; PUT R5 TO POINT TO INITIAL SP
       WRD SUPSP
       LOD R2,R2,R5     ; GET VALUE FOR PARAMETER SP

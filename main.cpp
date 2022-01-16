@@ -4,6 +4,8 @@
 #include <wingdi.h>
 #include <fstream>
 #include <algorithm>
+#include <chrono>
+
 
 static const unsigned int NumberOfKeys = 256U;
 bool previousKeyboardState[NumberOfKeys];
@@ -46,7 +48,7 @@ void reset() {
 void iscrtajZnakNaEkranu(HWND hwnd, int znak=0){
     hdc = GetDC(hwnd);
     TCHAR text[256];
-    swprintf(reinterpret_cast<wchar_t *>(text), 256, L"%c", znak);
+    snwprintf(reinterpret_cast<wchar_t *>(text), 256, L"%c", znak);
     TextOut(hdc, x, y, text, wcslen(reinterpret_cast<const wchar_t *>(text)));
     x+=8;
     pritisnutTaster= true;
@@ -148,7 +150,7 @@ void mloop() {
                 }
 			    // upis u video memoriju
                 if (regs[src2] > 8192){
-                    // već je upisnao u memoriju gornjim if-om
+                    // već je upisano u memoriju gornjim if-om
                     videochanged=1;
                     iscrtajZnakNaEkranu(hwndMain, memory[src2]);
                 }
@@ -212,10 +214,13 @@ void mloop() {
                 if (src2 == 15)
                     regs[15]++;
                 break;
-            case 0x9:  // LDC
-                regs[dest] = src1 << 4 | src2;
-                if (regs[dest] >= 128)
-                    regs[dest] |= 0xFF00;
+            case 0x9:  // MIF
+                if (regs[src1] != 0) {
+                    regs[dest] = regs[src2];
+                }
+//                regs[dest] = src1 << 4 | src2; //LDC
+//                if (regs[dest] >= 128)
+//                    regs[dest] |= 0xFF00;
                 break;
             case 0xA: // GTU
                 regs[dest] = regs[src1] > regs[src2] ? 1 : 0;
@@ -416,7 +421,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 // program koji učitava OS u dio RAM memorije
 void loadOS() {
     FILE* prom = fopen("..\\cmake-build-debug/demo.mem", "rb");
-    if (prom==NULL) {
+    //FILE* prom = fopen("..\\forthgraph.mem", "rb");
+    if (prom == nullptr) {
         printf("Error");
     }
     else {
