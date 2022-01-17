@@ -4,7 +4,19 @@
 #include <wingdi.h>
 #include <fstream>
 #include <algorithm>
-#include <chrono>
+#include <iostream>
+#include <thread>
+
+//std::atomic_bool interupt = true;
+//
+//void function() {
+//    std::clock_t start, end;
+//    while(TRUE) {
+//        start = std::clock();
+//        end = std::clock();
+//        Sleep(20 - (end - start)/CLOCKS_PER_SEC * 1000);
+//    }
+//}
 
 
 static const unsigned int NumberOfKeys = 256U;
