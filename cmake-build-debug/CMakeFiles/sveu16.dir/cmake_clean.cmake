@@ -1,5 +1,6 @@
 file(REMOVE_RECURSE
   "CMakeFiles/sveu16.dir/main.cpp.obj"
+  "CMakeFiles/sveu16.dir/main.cpp.obj.d"
   "libsveu16.dll.a"
   "sveu16.exe"
   "sveu16.exe.manifest"

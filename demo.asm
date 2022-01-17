@@ -32,5 +32,5 @@ STO R8,R8,R4 // mem[R4] = R8= 5 odabir sektora
 STO R7,R7,R3 // mem[R3] = R7= 2 komanda write
 STO R6,R6,R5 // mem[R5] = R6 upis na disk ono što je u R6=65
 // kraj
-LOD R15,R15,R15
-WRD 0
+//LOD R15,R15,R15
+//WRD 0

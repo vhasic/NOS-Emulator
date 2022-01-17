@@ -1,5 +1,6 @@
 file(REMOVE_RECURSE
   "CMakeFiles/asem.dir/asem.c.obj"
+  "CMakeFiles/asem.dir/asem.c.obj.d"
   "asem.exe"
   "asem.exe.manifest"
   "asem.pdb"

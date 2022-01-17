@@ -41,6 +41,14 @@ void reset() {
     regs[15] = 0;
 }
 
+void procitajZnakSaDiska(int pozicija=sektor){
+    std::ifstream diskFile("disk.bin", std::ios::binary);
+    diskFile.seekg(pozicija, std::ios::beg); // čitanje od pozicije
+    char znakZaPrikaz=0;
+    diskFile.read(&znakZaPrikaz,1);
+    printf("Sa diska: %c", znakZaPrikaz);
+}
+
 // Video memory at 0x8192
 // Nama je video memorija: Tekstualna video memorija, 1 riječ po ASCII znaku,
 // rezolucija 80x25 na adresi 8192 = 0x8192
@@ -58,12 +66,12 @@ void iscrtajZnakNaEkranu(HWND hwnd, int znak=0){
     pritisnutTaster= true;
 }
 
-char znakoviZaIscrtavanje[1000]={};
+unsigned short videoMemory[15]={};
 int brojacZnakova=0;
 void prikaziSveZnakoveNaEkranu(HWND hwnd){
     for (int i = 0; i < brojacZnakova; ++i) {
-        iscrtajZnakNaEkranu(hwnd,znakoviZaIscrtavanje[i]);
-        znakoviZaIscrtavanje[i]=0;
+        iscrtajZnakNaEkranu(hwnd, videoMemory[i]);
+        videoMemory[i]=0;
     }
     brojacZnakova=0;
 }
@@ -96,7 +104,6 @@ void mloop() {
                     }
                     // učitavanje iz buffera u odredište
                     for (int i = 0; i < 256; i+=2) {
-                        //todo ovdje se stalno piše jedno preko drugog? da li se ovo trebalo u memoriju zapisati?
                         if(i==0){ // u dest registar se upisuju samo prva 2 bajta (prva riječ)
                             regs[dest]=(buffer[i]<<8)+buffer[i+1]; //[0] vecih 8 bita, [1] nizih 8 bita; ...
                         }
@@ -167,9 +174,10 @@ void mloop() {
                 if (regs[src2] == 8192){
                     // već je upisano u memoriju gornjim if-om
                     videochanged=1;
-
-                    znakoviZaIscrtavanje[brojacZnakova]=regs[src1];
-                    brojacZnakova++;
+                    if(brojacZnakova<15){
+                        videoMemory[brojacZnakova]=regs[src1];
+                        brojacZnakova++;
+                    }
 
 //                    iscrtajZnakNaEkranu(hwndMain, memory[regs[src2]]);
                 }
@@ -184,7 +192,6 @@ void mloop() {
                     if (rezimDiska == 2){ // komanda write: dopisivanje podataka na disk
                         std::ofstream diskFile("disk.bin", std::ios::ate | std::ios::binary);
                         char izlazniBuffer[256];
-                        // todo ovdje vjerovatno ide iz memorije upis
                         //ako je iz memorije onda se mijenjaju nizih i visih osam bita sa zakomentarisanim linijama
 //                        int pozicija = regs[src1];
                         for (int i = 0; i < 256; i+=2) {
@@ -192,7 +199,8 @@ void mloop() {
 //                            char visihOsamBita = memory[pozicija] & 0xFF00;
 //                            pozicija++;
                             char nizihOsamBita = regs[src1] & 0x00FF;
-                            char visihOsamBita = regs[src1] & 0xFF00;
+                            char visihOsamBita = (regs[src1]>>8) & 0x00FF;
+//                            char visihOsamBita = regs[src1] & 0xFF00;
                             izlazniBuffer[i]=visihOsamBita;
                             izlazniBuffer[i+1]=nizihOsamBita;
                         }
@@ -260,7 +268,7 @@ DWORD WINAPI EmulateCPU(void *arg) {
     while (TRUE) {
         t1 = clock();
         t2 = t1 + delayadjust;
-        cyclecount = 20;
+        cyclecount = 20000;
         mloop();
         if (videochanged) {
             DisplayDIB(hwndMain, hdc);
@@ -338,9 +346,9 @@ void postaviBitLokacije(WPARAM wParam){
     int kod;
     int red=0;
     for (int i = 0; i < 10; ++i) {
-        auto pok=std::find(redovi[i], redovi[i] + 16, wParam); // prolazi kroz redove i traži znak
-        if(pok!=redovi[i] + 10){
-            int x = std::distance(redovi[i], std::find(redovi[i], redovi[i]+16, *pok));
+        // prolazi kroz redove i traži znak
+        int x = std::distance(redovi[i], std::find(redovi[i], redovi[i]+16, wParam));
+        if(x!=16){
             kod=maska[x];
             break;
         }
@@ -414,7 +422,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 
 // program koji učitava OS u dio RAM memorije
 void loadOS() {
-    FILE* prom = fopen("..\\cmake-build-debug/demo2.mem", "rb");
+    FILE* prom = fopen("..\\cmake-build-debug/demo.mem", "rb"); // demo za ispis na ekran preko video memorije i upis na disk
+//    FILE* prom = fopen("..\\cmake-build-debug/demo2.mem", "rb"); // demo za registrovanje pritiska tastera A
     if (prom == nullptr) {
         printf("Error");
     }
